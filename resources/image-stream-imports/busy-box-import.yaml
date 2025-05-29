@@ -1,0 +1,22 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStreamImport
+metadata:
+  name: internal-busy-box
+spec:
+  import: true
+  images:
+    - from:
+        kind: DockerImage
+        name: busybox:latest
+      to:
+        name: latest
+      importPolicy:
+        insecure: false # Set to true if using an insecure registry
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: internal-busy-box
+spec:
+  lookupPolicy:
+    local: true # Ensure the image is resolved locally

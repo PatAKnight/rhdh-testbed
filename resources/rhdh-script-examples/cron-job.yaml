@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: say-hello
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+    app.kubernetes.io/part-of: rhdh-start-scripts
+spec:
+  # Run Once an Hour
+  schedule: '0  * * * *'
+  jobTemplate:
+    metadata:
+      labels:
+        backstage.io/kubernetes-id: developer-hub
+    spec:
+      template:
+        metadata:
+          labels:
+            backstage.io/kubernetes-id: developer-hub
+        spec:
+          containers:
+            - name: hello
+              image: internal-busy-box:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - date; echo Hello from the Kubernetes cluster
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 50Mi
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+          restartPolicy: OnFailure

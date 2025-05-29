@@ -1,0 +1,8 @@
+# Local yaml files
+*.local.yaml
+
+# Env file
+.env
+
+# Visual Studio Code
+.vscode

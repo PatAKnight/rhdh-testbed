@@ -1,0 +1,20 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: components-config-map
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+data:
+  components.yaml: |
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: developer-hub
+      description: List of resources deployed to openshift to be viewed through the kubernetes and topology plugins
+      annotations:
+        backstage.io/kubernetes-id: developer-hub
+    spec:
+      type: service
+      system: integrations
+      lifecycle: qa
+      owner: fantastic-four

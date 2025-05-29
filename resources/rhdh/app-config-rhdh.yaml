@@ -1,0 +1,49 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: app-config-rhdh
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+data:
+  app-config-rhdh.yaml: |
+    app:
+      title: Red Hat Developer Hub
+
+    dynamicPlugins:
+      rootDirectory: dynamic-plugins-root
+      frontend:
+        default.main-menu-items:
+          menuItems:
+            default.list:
+              title: References
+              icon: bookmarks
+            default.apis:
+              parent: default.list
+            default.learning-path:
+              parent: default.list
+
+    auth:
+      environment: development
+      session:
+        secret: super-secret-session-secret
+      providers:
+        guest:
+          userEntityRef: user:default/guest
+          dangerouslyAllowOutsideDevelopment: true
+    signInPage: ${SIGN_IN_PAGE}
+
+    backend:
+      cache:
+        store: redis
+        connection: redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@redis:6379
+        useRedisSets: true
+
+    catalog:
+      import:
+        entityFilename: catalog-info.yaml
+        pullRequestBranchName: backstage-integration
+      rules:
+        - allow: [Component, System, Group, Resource, Location, Template, API, User]
+      locations:
+        - type: file
+          target: ./catalog-entities/components.yaml
