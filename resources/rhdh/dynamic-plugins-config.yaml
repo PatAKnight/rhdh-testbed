@@ -503,10 +503,16 @@ data:
             providers:
               ocm:
                 default:
-                  name: '${OCM_HUB_NAME}'
-                  url: '${OCM_HUB_URL}'
-                  serviceAccountToken: '${OCM_SA_TOKEN}'
-                  owner: janus-authors
+                  name: ${OCM_HUB_NAME}
+                  kubernetesPluginRef: ${K8S_CLUSTER_NAME}
+                  owner: ${OCM_HUB_OWNERS}
+                  schedule:
+                    frequency:
+                      minutes: 60
+                    initialDelay:
+                      seconds: 15
+                    timeout:
+                      minutes: 15
       # 34
       - package: ./dynamic-plugins/dist/backstage-community-plugin-ocm
         disabled: true
@@ -531,9 +537,9 @@ data:
                     config:
                       layout:
                         gridColumnEnd:
-                          lg: 'span 4'
-                          md: 'span 6'
-                          xs: 'span 12'
+                          lg: span 4
+                          md: span 6
+                          xs: span 12
                       if:
                         allOf:
                           - isKind: resource
@@ -543,9 +549,9 @@ data:
                     config:
                       layout:
                         gridColumnEnd:
-                          lg: 'span 4'
-                          md: 'span 6'
-                          xs: 'span 12'
+                          lg: span 4
+                          md: span 6
+                          xs: span 12
                       if:
                         allOf:
                           - isKind: resource

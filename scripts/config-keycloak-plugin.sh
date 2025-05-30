@@ -189,7 +189,8 @@ uninstall_rhsso() {
   oc delete keycloak keycloak --namespace=${NAMESPACE}
 
   # Uninstall the operator
-  oc delete clusterserviceversion rhsso-operator.7.6.11-opr-006 --namespace=${NAMESPACE}
+  OPERATOR=$(oc get csv --namespace=${NAMESPACE} | grep rhsso-operator | awk '{print $1}')
+  oc delete clusterserviceversion $OPERATOR --namespace=${NAMESPACE}
   oc delete sub rhsso-operator-subscription --namespace=${NAMESPACE}
 }
 

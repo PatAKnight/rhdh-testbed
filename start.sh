@@ -152,6 +152,9 @@ apply_user_configs() {
   if [[ -n "$SIGN_IN_PAGE" ]]; then
     sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "$SIGN_IN_PAGE" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
   fi
+
+  AUTH_SESSION_SECRET=$(tr -cd '[:alnum:]' </dev/urandom | fold -w 10 | head -1 | tr -d '\n')
+  sed -i "s|AUTH_SESSION_SECRET:.*|AUTH_SESSION_SECRET: $(echo -n "$AUTH_SESSION_SECRET" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
   oc apply -f $PWD/resources/user-resources/rhdh-secrets.local.yaml --namespace=${NAMESPACE}
 }
 

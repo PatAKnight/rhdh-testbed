@@ -94,6 +94,6 @@ This confirms that the catalog is successfully ingesting users from Keycloak
 
 ## Related Files
 
-- Resources: `resources/keycloak/` - RHSSO/Keycloak CRS and supporting manifests
+- Resources: `resources/keycloak/` - RHSSO/Keycloak CRS and supporting manifests, `resources/operators/` - RHSSO operator subscription
 - Scripts: `scrips/configure-keycloak-plugin.sh` - Automates plugin setup
 - Auth: `auth/cluster-secrets/` - Related secrets retrieved from the cluster

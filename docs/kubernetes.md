@@ -73,6 +73,6 @@ Demo users and entities may be created to simulate deployment environments if de
 
 ## Related Files
 
-- `resources/cluster-roles`, `resources/service-accounts` - contains Kubernetes RBAC YAMLs
+- `resources/cluster-roles/`, `resources/service-accounts/` - contains Kubernetes RBAC YAMLs
 - `scripts/configure-kubernetes-plugin.sh` - performs the automatic setup for Kubernetes integration
-- `auth/cluster-secrets` - Related secrets retrieved from the cluster
+- `auth/cluster-secrets/` - Related secrets retrieved from the cluster

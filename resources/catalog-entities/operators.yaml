@@ -43,3 +43,52 @@ data:
       dependencyOf: component:default/backstage-community-keycloak
       dependsOn: 
         - resource:default/rhsso-operator
+    ---
+    # ACM, Multiclusterhub, search
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: acm-operator
+      title: Advanced Cluster Manager for Kubernetes Operator
+      description: Operator that is used to configure the Advanced Cluster Manager for an OpenShift instance
+      annotations:
+        backstage.io/kubernetes-id: acm-operator
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-community-ocm
+      dependsOn: 
+        - resource:default/test-cluster
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: search-operator
+      title: Search Operator
+      description: Operator that is used in conjuction with the Advanced Cluster Manager for an OpenShift instance
+      annotations:
+        backstage.io/kubernetes-id: search-operator
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-community-ocm
+      dependsOn: 
+        - resource:default/test-cluster
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: multiclusterhub
+      title: MultiClusterHub
+      description: Advanced Cluster Manager deployment of the MultiClusterHub
+      annotations:
+        backstage.io/kubernetes-id: multiclusterhub
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-community-ocm
+      dependsOn: 
+        - resource:default/acm-operator

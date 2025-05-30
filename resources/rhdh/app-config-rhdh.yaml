@@ -25,7 +25,7 @@ data:
     auth:
       environment: development
       session:
-        secret: super-secret-session-secret
+        secret: ${AUTH_SESSION_SECRET}
       providers:
         guest:
           userEntityRef: user:default/guest
