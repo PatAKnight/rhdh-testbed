@@ -22,6 +22,10 @@ uninstall_serviceaccount_resources() {
   oc delete serviceaccount rhdh-k8s-plugin --namespace=${NAMESPACE}
 }
 
+uninstall_operator_group() {
+  oc delete operatorgroup default-operator-group --namespace=${NAMESPACE}
+}
+
 uninstall_topology_resources() {
   # Deployments
   oc delete deployment backstage-app --namespace=${NAMESPACE}
@@ -45,11 +49,15 @@ uninstall_redis() {
 }
 
 uninstall_catalog_entities() {
+  oc delete configmap operators-config-map --namespace=${NAMESPACE}
+  oc delete configmap plugins-config-map --namespace=${NAMESPACE}
   oc delete configmap components-config-map --namespace=${NAMESPACE}
 }
 
 uninstall_resources() {
   uninstall_serviceaccount_resources
+
+  uninstall_operator_group
 
   uninstall_topology_resources
 

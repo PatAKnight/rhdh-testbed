@@ -211,7 +211,7 @@ set_plugin_function_mappings() {
       [SERVICENOW_PLUGINS_CONFIGURED]=":"
       [TECHDOCS_CONTRIB_PLUGINS_CONFIGURED]=":"
       [THREESCALE_PLUGINS_CONFIGURED]=":"
-      [KEYCLOAK_PLUGINS_CONFIGURED]=":"
+      [KEYCLOAK_PLUGINS_CONFIGURED]="deploy_rhsso deploy_keycloak_resources config_secrets_for_keycloak_plugins create_users_and_groups_keycloak apply_keycloak_labels"
       [BITBUCKET_PLUGINS_CONFIGURED]=":"
       [DYNATRACE_PLUGINS_CONFIGURED]=":"
       [JIRA_PLUGINS_CONFIGURED]=":"
@@ -246,7 +246,7 @@ set_plugin_function_mappings() {
       [SERVICENOW_PLUGINS_CONFIGURED]=":"
       [TECHDOCS_CONTRIB_PLUGINS_CONFIGURED]=":"
       [THREESCALE_PLUGINS_CONFIGURED]=":"
-      [KEYCLOAK_PLUGINS_CONFIGURED]=":"
+      [KEYCLOAK_PLUGINS_CONFIGURED]="uninstall_rhsso"
       [BITBUCKET_PLUGINS_CONFIGURED]=":"
       [DYNATRACE_PLUGINS_CONFIGURED]=":"
       [JIRA_PLUGINS_CONFIGURED]=":"
@@ -270,7 +270,7 @@ main() {
   source "${PWD}/env_variables.sh"
   source "${PWD}/.env"
 
-  CONFIGMAP_FILE="${PWD}/resources/user-resources/dynamic-plugins-config-map.local.yaml"
+  CONFIGMAP_FILE="${PWD}/resources/user-resources/dynamic-plugins-config.local.yaml"
 
   get_enabled_plugins
 

@@ -13,4 +13,7 @@ NAMESPACE="rhdh"
 TIMEOUT=600  # Timeout in seconds
 INTERVAL=10  # Check interval in seconds
 
+# Plugin specific variables that need to be added to ensure we can reference them in separate scripts
+USER_CREDENTIALS=''
+
 set +a  # Stop automatically exporting variables

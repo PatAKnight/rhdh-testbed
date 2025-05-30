@@ -1,0 +1,1151 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: ant-man
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: ant_man
+    firstName: Scott
+    lastName: Lang
+    groups:
+      - marvel/fantastic-four
+    email: ant_man@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: hulk
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: hulk
+    firstName: Bruce
+    lastName: Banner
+    groups:
+      - marvel/defenders
+    email: hulk@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: thor
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: thor
+    firstName: Thor
+    lastName: Odinson
+    groups:
+      - marvel/avengers
+    email: thor@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: wasp
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: wasp
+    firstName: Janet
+    lastName: van Dyne
+    groups:
+      - marvel/defenders
+    email: wasp@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: captain-america
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: captain_america
+    firstName: Steve
+    lastName: Rogers
+    groups:
+      - marvel/avengers
+    email: captain_america@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: hawkeye
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: hawkeye
+    firstName: Clint
+    lastName: Barton
+    groups:
+      - marvel/defenders
+    email: hawkeye@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: scarlet-witch
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: scarlet_witch
+    firstName: Wanda
+    lastName: Maximoff
+    groups:
+      - marvel/avengers
+    email: scarlet_witch@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: black-panther
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: black_panther
+    firstName: King
+    lastName: T'Challa
+    groups:
+      - marvel/avengers
+    email: black_panther@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: vision
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: vision
+    firstName: Roy
+    lastName: Thomas
+    groups:
+      - marvel/avengers
+    email: vision@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: mantis
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: mantis
+    firstName: Mantis
+    lastName: Brandt
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: mantis@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: beast
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: beast
+    firstName: Hank
+    lastName: McCoy
+    groups:
+      - marvel/x-men
+    email: beast@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: captain-marvel
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: captain_marvel
+    firstName: Carol
+    lastName: Danvers
+    groups:
+      - marvel/avengers
+    email: captain_marvel@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: she-hulk
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: she_hulk
+    firstName: Susan
+    lastName: Walters
+    groups:
+      - marvel/fantastic-four
+    email: she_hulk@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: thing
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: thing
+    firstName: Ben
+    lastName: Grim
+    groups:
+      - marvel/fantastic-four
+    email: thing@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: spiderman
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: spiderman
+    firstName: Peter
+    lastName: Parker
+    groups:
+      - marvel/fantastic-four
+    email: spiderman@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: valkyrie
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: valkyrie
+    firstName: Brunnhilde
+    lastName: of Asgard
+    groups:
+      - marvel/defenders
+    email: valkyrie@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: nova
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: nova
+    firstName: Frankie
+    lastName: Raye
+    groups:
+      - marvel/fantastic-four
+    email: nova@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: storm
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: storm
+    firstName: Ororo
+    lastName: Munroe
+    groups:
+      - marvel/avengers
+    email: storm@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: psylocke
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: psylocke
+    firstName: Elizabeth
+    lastName: Braddock
+    groups:
+      - marvel/x-men
+    email: psylocke@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: penance
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: penance
+    firstName: Monet
+    lastName: Clarisse
+    groups:
+      - marvel/x-men
+    email: penance@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: cable
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: cable
+    firstName: Nathan
+    lastName: Christopher
+    groups:
+      - marvel/x-men
+    email: cable@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: iron-man
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: iron_man
+    firstName: Tony
+    lastName: Stark
+    groups:
+      - marvel/avengers
+    email: iron_man@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: cyclops
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: cyclops
+    firstName: Scott
+    lastName: Summers
+    groups:
+      - marvel/x-men
+    email: cyclops@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: gambit
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: gambit
+    firstName: Remy
+    lastName: LeBeau
+    groups:
+      - marvel/x-men
+    email: gambit@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: wolverine
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: wolverine
+    firstName: Logan
+    lastName: Howlett
+    groups:
+      - marvel/x-men
+    email: wolverine@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: professor-x
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: professor_x
+    firstName: Charles
+    lastName: Xavier
+    groups:
+      - marvel/x-men
+    email: professor_x@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: mister-fantastic
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: mister_fantastic
+    firstName: Reed
+    lastName: Richards
+    groups:
+      - marvel/fantastic-four
+    email: mister_fantastic@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: invisible-woman
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: invisible_woman
+    firstName: Sue
+    lastName: Storm
+    groups:
+      - marvel/fantastic-four
+    email: invisible_woman@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: human-torch
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: human_torch
+    firstName: Johnny
+    lastName: Storm
+    groups:
+      - marvel/fantastic-four
+    email: human_torch@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: starhawk
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: starhawk
+    firstName: Stakar
+    lastName: of the House of Ogord
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: starhawk@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: star-lord
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: star_lord
+    firstName: Peter
+    lastName: Quill
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: star_lord@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: gamora
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: gamora
+    firstName: Gamora
+    lastName: Titan
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: gamora@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: drax
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: drax
+    firstName: Arthur
+    lastName: Douglas
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: drax@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: rocket-raccoon
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: rocket_raccoon
+    firstName: Rocket
+    lastName: Raccoon
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: rocket_raccoon@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: adam-warlock
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: adam_warlock
+    firstName: Adam
+    lastName: Warlock
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: adam_warlock@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: groot
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: groot
+    firstName: Groot
+    lastName: Groot
+    groups:
+      - marvel/guardians-of-the-galaxy
+    email: groot@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: captain-britain
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: captain_britain
+    firstName: Betsy
+    lastName: Braddock
+    groups:
+      - marvel/x-force
+    email: captain_britain@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: deadpool
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: deadpool
+    firstName: Wade
+    lastName: Wilson
+    groups:
+      - marvel/x-force
+    email: deadpool@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: colossus
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: colossus
+    firstName: Piotr
+    lastName: Rasputin
+    groups:
+      - marvel/x-force
+    email: colossus@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: domino
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: domino
+    firstName: Neena
+    lastName: Thurman
+    groups:
+      - marvel/x-force
+    email: domino@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: x-23
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: x_23
+    firstName: Laura
+    lastName: Kinney
+    groups:
+      - marvel/x-force
+    email: x_23@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: marvel-girl
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: marvel_girl
+    firstName: Jean
+    lastName: Grey
+    groups:
+      - marvel/x-force
+    email: marvel_girl@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: copycat
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: copycat
+    firstName: Vanessa
+    lastName: Carlysle
+    groups:
+      - marvel/x-force
+    email: copycat@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: bishop
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: bishop
+    firstName: Lucas
+    lastName: Bishop
+    groups:
+      - marvel/x-force
+    email: bishop@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: doctor-strange
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: doctor_strange
+    firstName: Stephen
+    lastName: Strange
+    groups:
+      - marvel/defenders
+    email: doctor_strange@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: silver-surfer
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: silver_surfer
+    firstName: Norrin
+    lastName: Radd
+    groups:
+      - marvel/defenders
+    email: silver_surfer@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: nighthawk
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: nighthawk
+    firstName: Kyle
+    lastName: Richmond
+    groups:
+      - marvel/defenders
+    email: nighthawk@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: power-man
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: power_man
+    firstName: Victor
+    lastName: Alvarez
+    groups:
+      - marvel/defenders
+    email: power_man@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: admin
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: admin
+    firstName: Admin
+    lastName: Admin
+    groups:
+      - marvel/cluster-admins
+    email: admin@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: super-user
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      app: sso
+  user:
+    username: super_user
+    firstName: Super User
+    lastName: Super User
+    groups:
+      - marvel/cluster-admins
+    email: super_user@example.com
+    enabled: true
+    emailVerified: true
+    credentials:
+      - type: password
+        value: $USER_CREDENTIALS
+---
+

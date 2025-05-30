@@ -88,6 +88,10 @@ upstream:
         projected:
           sources:
             - configMap:
+                name: operators-config-map
+            - configMap:
+                name: plugins-config-map
+            - configMap:
                 name: components-config-map
   ingress:
     host: '{{ .Values.global.host }}'

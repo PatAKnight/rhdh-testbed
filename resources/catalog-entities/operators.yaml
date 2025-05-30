@@ -1,0 +1,45 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: operators-config-map
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+data:
+  operators.yaml: |
+    # RHSSO and Keycloak
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: rhsso-operator
+      title: Red Hat Single Sign-On Operator
+      description: Operator that is used to configure Red Hat Single Sign-On through the use of Keycloak for an OpenShift instance
+      annotations:
+        backstage.io/kubernetes-id: rhsso-operator
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-community-keycloak
+      dependsOn: 
+        - resource:default/test-cluster
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: keycloak
+      title: Keycloak
+      description: Red Hat Single Sign-On Operator deployment of Keycloak
+      annotations:
+        backstage.io/kubernetes-id: keycloak
+        backstage.io/kubernetes-namespace: rhdh
+      links:
+        - url: https://www.keycloak.org/documentation
+          title: Documentation
+          icon: web
+    spec:
+      type: identity-provider
+      lifecycle: production
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-community-keycloak
+      dependsOn: 
+        - resource:default/rhsso-operator

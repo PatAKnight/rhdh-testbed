@@ -84,6 +84,12 @@ deploy_serviceaccount_resources() {
   oc apply -f $PWD/resources/cluster-roles/cluster-role-binding-ocm.yaml --namespace=${NAMESPACE}
 }
 
+deploy_operator_groups() {
+  sed -i "s|<namespace>|$NAMESPACE|g" ${PWD}/resources/operators/operator-groups.yaml
+
+  oc apply -f $PWD/resources/operators/operator-groups.yaml --namespace=${NAMESPACE}
+}
+
 deploy_image_stream_imports() {
   oc apply -f $PWD/resources/image-stream-imports/alpine-import.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/image-stream-imports/busy-box-import.yaml --namespace=${NAMESPACE}
@@ -119,11 +125,15 @@ deploy_redis() {
 }
 
 deploy_catalog_entities() {
+  oc apply -f $PWD/resources/catalog-entities/operators.yaml --namespace=${NAMESPACE}
+  oc apply -f $PWD/resources/catalog-entities/plugins.yaml --namespace=${NAMESPACE}
   envsubst < $PWD/resources/catalog-entities/components.yaml | oc apply -f - --namespace=${NAMESPACE}
 }
 
 deploy_resources() {
   deploy_serviceaccount_resources
+
+  deploy_operator_groups
 
   deploy_image_stream_imports
 
@@ -139,8 +149,21 @@ apply_user_configs() {
   oc apply -f $PWD/resources/user-resources/app-config-rhdh.local.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/user-resources/dynamic-plugins-config.local.yaml --namespace=${NAMESPACE}
 
-  sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "$SIGN_IN_PAGE" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  if [[ -n "$SIGN_IN_PAGE" ]]; then
+    sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "$SIGN_IN_PAGE" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  fi
   oc apply -f $PWD/resources/user-resources/rhdh-secrets.local.yaml --namespace=${NAMESPACE}
+}
+
+detect_user_credentials() {
+  # If Keycloak is set, we generate some user credentials that can be used to log in with
+  oc get secret credential-backstage-super-user-rhdh --namespace=${NAMESPACE} -o yaml > $PWD/auth/cluster-secrets/credential-backstage-super-user-rhdh.local.yaml
+  USER_CREDENTIALS_ENCODED=$(grep 'password:' $PWD/auth/cluster-secrets/credential-backstage-super-user-rhdh.local.yaml | awk '{print $2}')
+  USER_CREDENTIALS=$(echo "$USER_CREDENTIALS_ENCODED" | base64 -d)
+  if [[ -n "$USER_CREDENTIALS" ]]; then
+    echo "The user credentials for your RHDH instances are:"
+    echo "  Username: super-user, Password: $USER_CREDENTIALS"
+  fi
 }
 
 helm_install() {
@@ -159,6 +182,8 @@ helm_install() {
     echo "Helm installation completed successfully."
     RHDH_ROUTE=$(oc get route $RELEASE_NAME-developer-hub -o=jsonpath='{.spec.host}')
     echo "Your RHDH instance can be accessed at: https://$RHDH_ROUTE"
+
+    detect_user_credentials
   else
     echo "Something went wrong with Helm installation!"
     helm list --namespace "${NAMESPACE}"

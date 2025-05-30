@@ -30,6 +30,15 @@ data:
         guest:
           userEntityRef: user:default/guest
           dangerouslyAllowOutsideDevelopment: true
+        oidc:
+          development:
+            metadataUrl: ${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}
+            clientId: ${KEYCLOAK_CLIENT_ID}
+            clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+            prompt: auto
+            signIn:
+              resolvers:
+                - resolver: preferredUsernameMatchingUserEntityName
     signInPage: ${SIGN_IN_PAGE}
 
     backend:
@@ -47,3 +56,5 @@ data:
       locations:
         - type: file
           target: ./catalog-entities/components.yaml
+        - type: file
+          target: ./catalog-entities/operators.yaml

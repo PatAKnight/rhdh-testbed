@@ -1,0 +1,29 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakClient
+metadata:
+  name: keycloak
+  labels:
+    app: sso
+spec:
+  client:
+    clientId: backstage
+    clientAuthenticatorType: client-secret
+    defaultClientScopes:
+      - profile
+      - email
+      - roles
+    directAccessGrantsEnabled: true
+    implicitFlowEnabled: false
+    publicClient: false
+    redirectUris:
+      - 'https://$GLOBAL_HOST/api/auth/oidc/handler/frame'
+    serviceAccountsEnabled: true
+    standardFlowEnabled: true
+  realmSelector:
+    matchLabels:
+      app: sso
+  serviceAccountClientRoles:
+    realm-management:
+      - query-groups
+      - query-users
+      - view-users

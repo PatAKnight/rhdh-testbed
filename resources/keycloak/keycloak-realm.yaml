@@ -1,0 +1,15 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: keycloak
+  labels:
+    app: sso
+spec:
+  realm:
+    id: 'backstage'
+    realm: 'backstage'
+    enabled: True
+    displayName: 'Backstage'
+  instanceSelector:
+    matchLabels:
+      app: sso
