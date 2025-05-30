@@ -182,6 +182,8 @@ main() {
 
   deploy_resources
 
+  eval "$DIR/config-plugins.sh"
+
   apply_user_configs
 
   helm_install

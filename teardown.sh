@@ -84,6 +84,8 @@ main() {
   TEARDOWN=true
   set +a
 
+  eval "$DIR/config-plugins.sh"
+
   uninstall_helm
 
   uninstall_resources

@@ -10,10 +10,11 @@ data:
       - 'dynamic-plugins.default.yaml'
     plugins:
       # Group: Github
+      # 0
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-github-dynamic
         # TODO RHIDP-3187 - graduate this plugin to GA so it can be enabled by default
-        disabled: true
-
+        disabled: false
+      # 1
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-dynamic
         disabled: true
         pluginConfig:
@@ -22,7 +23,7 @@ data:
               github:
                 providerId:
                   organization: '${GITHUB_ORG}'
-
+      # 2
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-github-org-dynamic
         disabled: true
         pluginConfig:
@@ -39,7 +40,7 @@ data:
                     seconds: 15
                   timeout:
                     minutes: 15
-
+      # 3
       - package: ./dynamic-plugins/dist/backstage-community-plugin-github-actions
         disabled: true
         pluginConfig:
@@ -55,7 +56,7 @@ data:
                       if:
                         allOf:
                           - isGithubActionsAvailable
-
+      # 4
       - package: ./dynamic-plugins/dist/backstage-community-plugin-github-issues
         disabled: true
         pluginConfig:
@@ -71,7 +72,7 @@ data:
                       if:
                         allOf:
                           - hasAnnotation: github.com/project-slug
-
+      # 5
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-github-insights
         disabled: true
         pluginConfig:
@@ -90,7 +91,7 @@ data:
                       if:
                         allOf:
                           - isGithubInsightsAvailable
-
+      # 6
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-github-pull-requests
         disabled: true
         pluginConfig:
@@ -117,7 +118,7 @@ data:
                       if:
                         allOf:
                           - isGithubPullRequestsAvailable
-
+      # 7
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-security-insights
         disabled: true
         pluginConfig:
@@ -136,19 +137,19 @@ data:
                       if:
                         allOf:
                           - isSecurityInsightsAvailable
-
+      # 8
       # Group: Gitlab
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-gitlab-dynamic
         # TODO RHIDP-3187 - graduate this plugin to GA so it can be enabled by default
-        disabled: true
-
+        disabled: false
+      # 9
       - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab-backend-dynamic
         disabled: true
         pluginConfig:
           gitlab:
             host: ${GITLAB_HOST}
             token: ${GITLAB_TOKEN}
-
+      # 10
       - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab
         disabled: true
         pluginConfig:
@@ -191,21 +192,21 @@ data:
                       if:
                         allOf:
                           - isGitlabAvailable
-
+      # 11
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-gitlab-dynamic
         disabled: true
         pluginConfig:
           catalog:
             providers:
               gitlab: {}
-
+      # 12
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-gitlab-org-dynamic
         disabled: true
         pluginConfig:
           catalog:
             providers:
               gitlab: {}
-
+      # 13
       # Group: Kubernetes
       - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic
         disabled: true
@@ -221,7 +222,7 @@ data:
                     authProvider: 'serviceAccount'
                     skipTLSVerify: true
                     serviceAccountToken: ${K8S_CLUSTER_TOKEN}
-
+      # 14
       - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
         disabled: true
         pluginConfig:
@@ -238,7 +239,7 @@ data:
                         anyOf:
                           - hasAnnotation: backstage.io/kubernetes-id
                           - hasAnnotation: backstage.io/kubernetes-namespace
-
+      # 15
       - package: ./dynamic-plugins/dist/backstage-community-plugin-topology
         disabled: true
         pluginConfig:
@@ -256,7 +257,7 @@ data:
                         anyOf:
                           - hasAnnotation: backstage.io/kubernetes-id
                           - hasAnnotation: backstage.io/kubernetes-namespace
-
+      # 16
       # Group: ArgoCD
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
         disabled: true
@@ -270,7 +271,7 @@ data:
                   - name: argoInstance1
                     url: '${ARGOCD_INSTANCE1_URL}'
                     token: '${ARGOCD_AUTH_TOKEN}'
-
+      # 17
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
         disabled: true
         pluginConfig:
@@ -283,7 +284,7 @@ data:
                   - name: argoInstance1
                     url: '${ARGOCD_INSTANCE1_URL}'
                     token: '${ARGOCD_AUTH_TOKEN}'
-
+      # 18
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
         disabled: true
         pluginConfig:
@@ -309,7 +310,7 @@ data:
                       if:
                         allOf:
                           - isArgocdAvailable
-
+      # 19
       - package: ./dynamic-plugins/dist/backstage-community-plugin-redhat-argocd
         disabled: true
         pluginConfig:
@@ -335,12 +336,12 @@ data:
                       if:
                         allOf:
                           - isArgocdConfigured
-
+      # 20
       # Group: Azure Devops
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-azure-dynamic
         # TODO RHIDP-3187 - graduate this plugin to GA so it can be enabled by default
-        disabled: true
-
+        disabled: false
+      # 21
       - package: ./dynamic-plugins/dist/backstage-community-plugin-azure-devops-backend-dynamic
         disabled: true
         pluginConfig:
@@ -348,7 +349,7 @@ data:
             host: dev.azure.com
             token: ${AZURE_TOKEN}
             organization: ${AZURE_ORG}
-
+      # 22
       - package: ./dynamic-plugins/dist/backstage-community-plugin-azure-devops
         disabled: true
         pluginConfig:
@@ -372,10 +373,10 @@ data:
                       if:
                         allOf:
                           - isAzureDevOpsAvailable
-
+      # 23
       - package: ./dynamic-plugins/dist/parfuemerie-douglas-scaffolder-backend-module-azure-repositories-dynamic
-        disabled: true
-
+        disabled: false
+      # 24
       # Group: Jenkins
       - package: ./dynamic-plugins/dist/backstage-community-plugin-jenkins-backend-dynamic
         disabled: true
@@ -386,7 +387,7 @@ data:
                 baseUrl: ${JENKINS_URL}
                 username: ${JENKINS_USERNAME}
                 apiKey: ${JENKINS_TOKEN}
-
+      # 25
       - package: ./dynamic-plugins/dist/backstage-community-plugin-jenkins
         disabled: true
         pluginConfig:
@@ -402,7 +403,7 @@ data:
                       if:
                         allOf:
                           - isJenkinsAvailable
-
+      # 26
       # Group: Notifications
       - package: ./dynamic-plugins/dist/backstage-plugin-notifications
         disabled: true
@@ -419,10 +420,10 @@ data:
                           webNotificationsEnabled: false
                       importName: NotificationsSidebarItem
                     path: /notifications
-
+      # 27
       - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
         disabled: true
-
+      # 28
       - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-module-email-dynamic
         disabled: true
         pluginConfig:
@@ -438,17 +439,17 @@ data:
                 sender: ${EMAIL_SENDER}
                 broadcastConfig:
                   receiver: 'users'
-
+      # 29
       - package: ./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic
         disabled: true
-
+      # 30
       - package: ./dynamic-plugins/dist/backstage-plugin-signals
         disabled: true
         pluginConfig:
           dynamicPlugins:
             frontend:
               backstage.plugin-signals: {}
-
+      # 31
       # Group: SonarQube
       - package: ./dynamic-plugins/dist/backstage-community-plugin-sonarqube-backend-dynamic
         disabled: true
@@ -456,7 +457,7 @@ data:
           sonarqube:
             baseUrl: ${SONARQUBE_URL}
             apiKey: ${SONARQUBE_TOKEN}
-
+      # 32
       - package: ./dynamic-plugins/dist/backstage-community-plugin-sonarqube
         disabled: true
         pluginConfig:
@@ -475,7 +476,7 @@ data:
                       if:
                         allOf:
                           - isSonarQubeAvailable
-
+      # 33
       # Group: OCM
       - package: ./dynamic-plugins/dist/backstage-community-plugin-ocm-backend-dynamic
         disabled: true
@@ -488,7 +489,7 @@ data:
                   url: '${OCM_HUB_URL}'
                   serviceAccountToken: '${OCM_SA_TOKEN}'
                   owner: janus-authors
-
+      # 34
       - package: ./dynamic-plugins/dist/backstage-community-plugin-ocm
         disabled: true
         pluginConfig:
@@ -531,11 +532,11 @@ data:
                         allOf:
                           - isKind: resource
                           - isType: kubernetes-cluster
-
+      # 35
       # Group: Bulk import
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import-backend-dynamic
         disabled: true
-
+      # 36
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-bulk-import
         disabled: true
         pluginConfig:
@@ -551,7 +552,7 @@ data:
                     menuItem:
                       icon: bulkImportIcon
                       text: Bulk import
-
+      # 37
       # Global Header
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
         disabled: false
@@ -618,7 +619,7 @@ data:
                     importName: LogoutButton
                     config:
                       priority: 10
-
+      # 38
       # Group: Global floating action button
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-floating-action-button
         disabled: false
@@ -629,7 +630,7 @@ data:
                 mountPoints:
                   - mountPoint: application/listener
                     importName: DynamicGlobalFloatingActionButton
-
+      # 39
       # Homepage
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-dynamic-home-page
         disabled: false
@@ -673,7 +674,7 @@ data:
                         sm: { w: 12, h: 4 }
                         xs: { w: 12, h: 4 }
                         xxs: { w: 12, h: 4 }
-
+      # 40
       # Techdocs
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
         disabled: false
@@ -688,7 +689,7 @@ data:
               runIn: local
             publisher:
               type: local
-
+      # 41
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs
         disabled: false
         pluginConfig:
@@ -732,7 +733,7 @@ data:
                       props:
                         name: Documentation
                         icon: docs
-
+      # 42
       - package: ./dynamic-plugins/dist/backstage-plugin-techdocs-module-addons-contrib
         disabled: false
         pluginConfig:
@@ -741,7 +742,7 @@ data:
               backstage.plugin-techdocs-module-addons-contrib:
                 techdocsAddons:
                   - importName: ReportIssue
-
+      # 43
       # PagerDuty
       - package: ./dynamic-plugins/dist/pagerduty-backstage-plugin
         disabled: true
@@ -760,7 +761,7 @@ data:
                       if:
                         allOf:
                           - isPluginApplicableToEntity
-
+      # 44
       - package: ./dynamic-plugins/dist/pagerduty-backstage-plugin-backend-dynamic
         disabled: true
         pluginConfig:
@@ -772,25 +773,25 @@ data:
               subDomain: ${PAGERDUTY_SUBDOMAIN}
 
       # Standalone plugins
-
+      # 45
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-gerrit-dynamic
-        disabled: true
-
+        disabled: false
+      # 46
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-utils-dynamic
-        disabled: true
-
+        disabled: false
+      # 47
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-http-request-dynamic
-        disabled: true
-
+        disabled: false
+      # 48
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-kubernetes-dynamic
-        disabled: true
-
+        disabled: false
+      # 49
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-quay-dynamic
         disabled: false
-
+      # 50
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-regex-dynamic
         disabled: false
-
+      # 51
       - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
         disabled: true
         pluginConfig:
@@ -822,7 +823,7 @@ data:
                 superUsers:
                   - name: user:default/${AUTH_USERNAME}
                   - name: user:default/super_user
-
+      # 52
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-servicenow-dynamic
         disabled: true
         pluginConfig:
@@ -833,10 +834,10 @@ data:
             username: ${SERVICENOW_USERNAME}
             # The password to use for authentication.
             password: ${SERVICENOW_PASSWORD}
-
+      # 53
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-sonarqube-dynamic
-        disabled: true
-
+        disabled: false
+      # 54
       - package: ./dynamic-plugins/dist/backstage-community-plugin-3scale-backend-dynamic
         disabled: true
         pluginConfig:
@@ -846,7 +847,7 @@ data:
                 default:
                   baseUrl: '${THREESCALE_BASE_URL}'
                   accessToken: '${THREESCALE_ACCESS_TOKEN}'
-
+      # 55
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
         disabled: true
         pluginConfig:
@@ -866,10 +867,10 @@ data:
                       seconds: 15
                     timeout:
                       minutes: 50
-
+      # 56
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-bitbucket-cloud-dynamic
-        disabled: true
-
+        disabled: false
+      # 57
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-bitbucket-cloud-dynamic
         disabled: true
         pluginConfig:
@@ -886,10 +887,10 @@ data:
                       minutes: 1
                     timeout:
                       minutes: 3
-
+      # 58
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-bitbucket-server-dynamic
-        disabled: true
-
+        disabled: false
+      # 59
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-bitbucket-server-dynamic
         disabled: true
         pluginConfig:
@@ -906,7 +907,7 @@ data:
                       minutes: 1
                     timeout:
                       minutes: 3
-
+      # 60
       - package: ./dynamic-plugins/dist/backstage-community-plugin-dynatrace
         disabled: true
         pluginConfig:
@@ -922,7 +923,7 @@ data:
                       if:
                         allOf:
                           - isDynatraceAvailable
-
+      # 61
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-jira
         disabled: true
         pluginConfig:
@@ -938,7 +939,7 @@ data:
                       if:
                         allOf:
                           - isJiraAvailable
-
+      # 62
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-datadog
         disabled: true
         pluginConfig:
@@ -954,7 +955,7 @@ data:
                       if:
                         allOf:
                           - isDatadogAvailable
-
+      # 63
       - package: ./dynamic-plugins/dist/backstage-community-plugin-tekton
         disabled: true
         pluginConfig:
@@ -970,7 +971,7 @@ data:
                       if:
                         allOf:
                           - isTektonCIAvailable
-
+      # 64
       - package: ./dynamic-plugins/dist/backstage-community-plugin-quay
         disabled: true
         pluginConfig:
@@ -986,7 +987,7 @@ data:
                       if:
                         anyOf:
                           - isQuayAvailable
-
+      # 65
       - package: ./dynamic-plugins/dist/backstage-community-plugin-nexus-repository-manager
         disabled: true
         pluginConfig:
@@ -1002,7 +1003,7 @@ data:
                       if:
                         anyOf:
                           - isNexusRepositoryManagerAvailable
-
+      # 66
       - package: ./dynamic-plugins/dist/backstage-community-plugin-acr
         disabled: true
         pluginConfig:
@@ -1018,7 +1019,7 @@ data:
                       if:
                         anyOf:
                           - isAcrAvailable
-
+      # 67
       - package: ./dynamic-plugins/dist/backstage-community-plugin-jfrog-artifactory
         disabled: true
         pluginConfig:
@@ -1034,7 +1035,7 @@ data:
                       if:
                         anyOf:
                           - isJfrogArtifactoryAvailable
-
+      # 68
       - package: ./dynamic-plugins/dist/backstage-community-plugin-lighthouse
         disabled: true
         pluginConfig:
@@ -1061,7 +1062,7 @@ data:
                       if:
                         allOf:
                           - isLighthouseAvailable
-
+      # 69
       - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar
         disabled: true
         pluginConfig:
@@ -1083,13 +1084,13 @@ data:
                       props:
                         width: 1500
                         height: 800
-
+      # 70
       - package: ./dynamic-plugins/dist/backstage-community-plugin-tech-radar-backend-dynamic
         disabled: true
         pluginConfig:
           techRadar:
             url: ${TECH_RADAR_DATA_URL}
-
+      # 71
       - package: ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
         disabled: true
         pluginConfig:
@@ -1110,38 +1111,38 @@ data:
                 writeKey: ${SEGMENT_WRITE_KEY}
                 maskIP: true # prevents IP addresses from being sent if true
                 testMode: ${SEGMENT_TEST_MODE} # prevents data from being sent if true
-
+      # 72
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor-dynamic
         disabled: true
-
+      # 73
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-msgraph-dynamic
         disabled: true
         pluginConfig:
           catalog:
             providers:
               microsoftGraphOrg: {}
-
+      # 74
       - package: ./dynamic-plugins/dist/backstage-plugin-catalog-backend-module-ldap-dynamic
         disabled: true
         pluginConfig:
           catalog:
             providers:
               ldapOrg: {}
-
+      # 75
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-pingidentity-dynamic
         disabled: true
         pluginConfig:
           catalog:
             providers:
               pingIdentityOrg: {}
-
+      # 76
       # Group: Marketplace
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
         disabled: false
-
+      # 77
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
         disabled: false
-
+      # 78
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
         disabled: false
         pluginConfig:
