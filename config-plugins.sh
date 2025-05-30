@@ -197,7 +197,7 @@ set_plugin_function_mappings() {
     plugin_resources=(
       [GITHUB_PLUGINS_CONFIGURED]=":"
       [GITLAB_PLUGINS_CONFIGURED]=":"
-      [KUBERNETES_PLUGINS_CONFIGURED]=":"
+      [KUBERNETES_PLUGINS_CONFIGURED]="config_secrets_for_kubernetes_plugins"
       [ARGOCD_PLUGINS_CONFIGURED]=":"
       [AZURE_PLUGINS_CONFIGURED]=":"
       [JENKINS_PLUGINS_CONFIGURED]=":"
