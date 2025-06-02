@@ -63,7 +63,7 @@ Running `scripts/configure-ocm-plugins.sh` will:
 **Run:**
 
 ```bash
-scripts/configure-ocm-plugin.sh
+scripts/config-ocm-plugin.sh
 ```
 
 ## Demo
@@ -83,6 +83,6 @@ Demo verification:
 ## Related Files
 
 - `resources/ocm/` - ACM specific Kubernetes manifests (e.g., MultiClusterHub)
-- `scripts/configure-ocm-plugin.sh` - performs the automatic setup for ACM integration
+- `scripts/config-ocm-plugin.sh` - performs the automatic setup for ACM integration
 - `auth/cluster-secrets/` - Related secrets retrieved from the cluster
 - `resources/operators/` - Subscription for the ACM operator

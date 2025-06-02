@@ -69,7 +69,7 @@ This will:
 Runs via:
 
 ```bash
-./scripts/configure-keycloak-plugin.sh
+./scripts/config-keycloak-plugin.sh
 ```
 
 This script performs the minimal steps required for integration:
@@ -95,5 +95,5 @@ This confirms that the catalog is successfully ingesting users from Keycloak
 ## Related Files
 
 - Resources: `resources/keycloak/` - RHSSO/Keycloak CRS and supporting manifests, `resources/operators/` - RHSSO operator subscription
-- Scripts: `scrips/configure-keycloak-plugin.sh` - Automates plugin setup
+- Scripts: `scrips/config-keycloak-plugin.sh` - Automates plugin setup
 - Auth: `auth/cluster-secrets/` - Related secrets retrieved from the cluster
