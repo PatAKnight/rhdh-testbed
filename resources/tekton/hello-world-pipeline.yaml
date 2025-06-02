@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: hello-world-pipeline
+  labels:
+    backstage.io/kubernetes-id: developer-hub
+spec:
+  tasks:
+    - name: echo-hello-world
+      taskSpec:
+        steps:
+          - name: echo-hello-world
+            image: image-registry.openshift-image-registry.svc:5000/$NAMESPACE/internal-ubuntu:latest
+            imagePullPolicy: IfNotPresent
+            script: |
+              #!/usr/bin/env bash
+              echo "Hello, World!"
+    - name: echo-bye
+      taskSpec:
+        steps:
+          - name: echo-goodbye
+            image: image-registry.openshift-image-registry.svc:5000/$NAMESPACE/internal-ubuntu:latest
+            imagePullPolicy: IfNotPresent
+            script: |
+              #!/usr/bin/env bash
+              echo "Good Bye!"

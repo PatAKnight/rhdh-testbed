@@ -92,3 +92,19 @@ data:
       dependencyOf: component:default/backstage-community-ocm
       dependsOn: 
         - resource:default/acm-operator
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: pipelines-operator
+      title: Red Hat OpenShift Pipelines Operator
+      description: Operator that is used to configure Red Hat OpenShift Pipelines for an OpenShift instance
+      annotations:
+        backstage.io/kubernetes-id: pipelines-operator
+        backstage.io/kubernetes-namespace: openshift-operators
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/backstage-plugin-tekton-workspace
+      dependsOn: 
+        - resource:default/test-cluster

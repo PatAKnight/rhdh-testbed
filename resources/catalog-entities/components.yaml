@@ -13,6 +13,7 @@ data:
       description: List of resources deployed to openshift to be viewed through the kubernetes and topology plugins
       annotations:
         backstage.io/kubernetes-id: developer-hub
+        tekton.dev/cicd: "true"
     spec:
       type: service
       system: integrations

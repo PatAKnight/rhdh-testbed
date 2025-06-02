@@ -96,6 +96,7 @@ deploy_image_stream_imports() {
   oc apply -f $PWD/resources/image-stream-imports/nginxdemos-import.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/image-stream-imports/perl-import.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/image-stream-imports/redis-import.yaml --namespace=${NAMESPACE}
+  oc apply -f $PWD/resources/image-stream-imports/ubuntu-import.yaml --namespace=${NAMESPACE}
 }
 
 deploy_topology_resources() {
