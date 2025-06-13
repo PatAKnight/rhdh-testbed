@@ -182,7 +182,6 @@ apply_keycloak_labels() {
 
 uninstall_rhsso() {
   # Delete keycloak resources
-  
   oc delete -f $PWD/resources/keycloak/keycloak-users.yaml --namespace=${NAMESPACE}
   oc delete keycloakclient keycloak --namespace=${NAMESPACE}
   oc delete keycloakrealm keycloak --namespace=${NAMESPACE}

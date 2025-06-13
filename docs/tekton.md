@@ -88,7 +88,7 @@ This is useful if you already have a Backstage instance up and want to bolt on j
 ## Related Files
 
 - Resources: `resources/tekton/` - Tekton CRs and supporting manifests, `resources/operators/` - OpenShift Pipelines operator subscription
-- Scripts: `scrips/config-keycloak-plugin.sh` - Automates plugin setup
+- Scripts: `scrips/config-tekton-plugin.sh` - Automates plugin setup
 
 ## Notes
 

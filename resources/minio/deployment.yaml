@@ -1,0 +1,53 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: minio
+  labels:
+    backstage.io/kubernetes-id: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest # TODO: swap to the imagestream
+          args:
+            - server
+            - /data
+            - '--console-address'
+            - ':9090'
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minio_root_user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minio_root_password
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              subPath: minio
+          # resources:
+          #   requests:
+          #     # cpu: 50m
+          #     memory: 16Gi
+          # limits:
+          #   cpu: 100m
+          #   memory: 100Mi

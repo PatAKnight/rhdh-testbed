@@ -1,0 +1,21 @@
+apiVersion: capabilities.3scale.net/v1beta1
+kind: ActiveDoc
+metadata:
+  generation: 5
+  name: bulk-import
+spec:
+  activeDocOpenAPIRef:
+    url: 'https://raw.githubusercontent.com/redhat-developer/rhdh-plugins/main/workspaces/bulk-import/plugins/bulk-import-backend/src/schema/openapi.yaml'
+  name: ActiveDoc for the Bulk Import backend plugin
+  systemName: operatedactivedocfromurl
+  skipSwaggerValidations: true
+  productSystemName: test
+---
+kind: ActiveDoc
+apiVersion: capabilities.3scale.net/v1beta1
+metadata:
+  name: pet-store
+spec:
+  activeDocOpenAPIRef:
+    url: 'https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/examples/v3.0/petstore.json'
+  name: ActiveDoc for the petstore
