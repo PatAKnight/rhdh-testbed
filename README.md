@@ -68,7 +68,14 @@ The `/auth` directory is intended to store sensitive configuration files used by
 
 More details about this directory and how to populate it are provided in the plugin specific documentation.
 
-## First Steps
+## Running the Scripts
+
+You have two options to run these scripts:
+
+1. **Locally** - Install dependencies (`oc`, `helm`) and run directly
+2. **Docker** - Use containerized environment (especially useful for macOS users)
+
+## First Steps (Local Installation)
 
 These scripts are designed to work out-of-the-box with minimal setup. In fact, it's recommended that you start with the default setup to better understand how everything fits together. You can always customize and extend things later.
 
@@ -117,6 +124,24 @@ Step 6. Access your RHDH instance:
 - Once deployment is complete, navigate to the exposed route for RHDH in your OpenShift cluster (this is typically displayed in the script output).
 
 You'll now have a clean, working instance of RHDH that's ready to be enhanced in the next steps
+
+## Alternative: Run with Docker
+
+If you prefer containerized execution, use this instead of the local installation above:
+
+- Prereqs: Docker, `.env` configured (see Steps 3–4 from local installation).
+- First time setup:
+
+```bash
+docker compose build
+docker compose up rhdh-deploy
+```
+
+- Teardown when done:
+
+```bash
+docker compose up rhdh-teardown
+```
 
 ## Next Steps
 
