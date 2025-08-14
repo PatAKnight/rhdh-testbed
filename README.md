@@ -134,7 +134,7 @@ If you prefer containerized execution, use this instead of the local installatio
 
 ```bash
 docker compose build
-docker compose up rhdh-deploy
+docker compose up rhdh-start
 ```
 
 - Teardown when done:
