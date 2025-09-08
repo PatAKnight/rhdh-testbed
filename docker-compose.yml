@@ -1,0 +1,24 @@
+x-rhdh-base: &rhdh-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  platform: linux/amd64
+  volumes:
+    - .:/app
+    - auth-cluster-secrets:/app/auth/cluster-secrets
+    - ~/.kube:/root/.kube
+    - ~/.helm:/root/.helm
+  stdin_open: true
+  tty: true
+
+services:
+  rhdh-start:
+    <<: *rhdh-base
+    entrypoint: ["bash", "/app/start.sh"]
+
+  rhdh-teardown:
+    <<: *rhdh-base
+    entrypoint: ["bash", "/app/teardown.sh"]
+
+volumes:
+  auth-cluster-secrets:
