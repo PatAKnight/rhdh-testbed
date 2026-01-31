@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-testbed-config
+  namespace: rhdh-testbed
+  labels:
+    app.kubernetes.io/name: rhdh-testbed
+    app.kubernetes.io/component: config
+data:
+  # Core settings
+  NAMESPACE: 'rhdh'
+  RELEASE_NAME: 'backstage'
+  K8S_CLUSTER_NAME: 'my-cluster'
+
+  # Helm settings
+  HELM_REPO_NAME: 'openshift-helm-charts'
+  HELM_REPO_URL: 'https://charts.openshift.io'
+  HELM_CHART_NAME: 'redhat-developer-hub'
+  HELM_CHART_VERSION: '1.6.0'
+
+  # Authentication
+  SIGN_IN_PAGE: 'guest'
+
+  # Timeouts
+  TIMEOUT: '600'
+  INTERVAL: '10'
+
+  # Plugin enablement flags
+  ENABLE_KEYCLOAK: 'false'
+  ENABLE_TEKTON: 'false'
+  ENABLE_OCM: 'false'
+  ENABLE_3SCALE: 'false'

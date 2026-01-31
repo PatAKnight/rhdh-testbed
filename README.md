@@ -2,6 +2,19 @@
 
 A collection of resources and scripts to quickly deploy an RHDH instance in Kubernetes, preloaded with useful plugins, example entities, and third-party integrations for rapid testing and development.
 
+## Table of Contents
+
+## Table of Contents
+
+- [Background and Purpose](#background-and-purpose)
+- [Outline of this project](#outline-of-this-project)
+- [Running the Scripts](#running-the-scripts)
+  - [Option 1: Local Installation](#option-1-local-installation)
+  - [Option 2: Run with Docker](#option-2-run-with-docker)
+  - [Option 3: Deploy as Kubernetes Job](#option-3-deploy-as-kubernetes-job)
+- [Next Steps](#next-steps)
+- [General notes](#general-notes)
+
 ## Background and Purpose
 
 These scripts were created out of a need to quickly spin up an RHDH instance preconfigured for testing. The goal is to streamline the process of deploying Red Hat Developer Hub with preconfigured plugins and supporting resources, making it easy for team members, especially those working on plugins, to verify changes, report bugs, and explore features in a real environment. It also serves as a practical example of how RHDH and its plugins can be integrated and showcased.
@@ -70,12 +83,15 @@ More details about this directory and how to populate it are provided in the plu
 
 ## Running the Scripts
 
-You have two options to run these scripts:
+There are three ways to run the testbed scripts, depending on your environment and preferences:
 
-1. **Locally** - Install dependencies (`oc`, `helm`) and run directly
-2. **Docker** - Use containerized environment (especially useful for macOS users)
+| Method             | Best For                                                | Requirements                   |
+| ------------------ | ------------------------------------------------------- | ------------------------------ |
+| **Local**          | Development, quick iterations, full control             | `oc`, `helm` installed locally |
+| **Docker Compose** | macOS users, isolated environment, no local tool setup  | Docker Desktop                 |
+| **Kubernetes Job** | CI/CD pipelines, fully automated, no local tools needed | Cluster access only            |
 
-## First Steps (Local Installation)
+### Option 1: Local Installation
 
 These scripts are designed to work out-of-the-box with minimal setup. In fact, it's recommended that you start with the default setup to better understand how everything fits together. You can always customize and extend things later.
 
@@ -125,7 +141,7 @@ Step 6. Access your RHDH instance:
 
 You'll now have a clean, working instance of RHDH that's ready to be enhanced in the next steps
 
-## Alternative: Run with Docker
+## Option 2: Run with Docker
 
 If you prefer containerized execution, use this instead of the local installation above:
 
@@ -142,6 +158,184 @@ docker compose up rhdh-start
 ```bash
 docker compose up rhdh-teardown
 ```
+
+## Option 3: Deploy as Kubernetes Job
+
+For fully automated, hands-off deployment directly on your cluster without any local tooling requirements, you can deploy the testbed as a Kubernetes Job.
+
+### Prerequisites
+
+- Access to an OpenShift cluster with `cluster-admin` or equivalent permissions
+- `oc` or `kubectl` CLI (only needed to apply the manifests)
+
+### Using the Pre-built Image
+
+A pre-built container image is available at `ghcr.io/PatAKnight/rhdh-testbed:latest`.
+
+**Step 1.** Create the deployment namespace:
+
+`oc new-project rhdh-testbed`
+
+**Step 2a.** Configure the deployment by editing `deploy/configmap.yaml`:
+
+Key ConfigMap values:
+
+| Variable         | Description                           | Default    |
+| ---------------- | ------------------------------------- | ---------- |
+| NAMESPACE        | Namespace where RHDH will be deployed | rhdh       |
+| RELEASE_NAME     | Helm release name                     | backstage  |
+| K8S_CLUSTER_NAME | Name for you cluster in RHDH          | my-cluster |
+| SIGN_IN_PAGE     | Authentication method (guest or oidc) | guest      |
+| ENABLE_KEYCLOAK  | Deploy Keycloak for SSO               | false      |
+| ENABLE_TEKTON    | Deploy OpenShift Pipelines            | false      |
+| ENABLE_OCM       | Deploy Advanced Cluster Management    | false      |
+
+**Step 2b.** Create your secret file using `deploy/secret-template.yaml` as an example:
+
+```bash
+# Step 2b: Create and apply your secret
+cp deploy/secret-template.yaml deploy/secret.local.yaml
+
+# Edit with your values THEN APPLY
+oc apply -f deploy/secret.local.yaml -n rhdh-testbed
+```
+
+**Step 3.** Apply the deployment resources:
+
+```bash
+# Apply ServiceAccount, ClusterRole, ClusterRoleBinding, ConfigMap, and Secret
+oc apply -k deploy/
+
+# Start the setup job
+oc apply -f deploy/job.yaml
+```
+
+**Optional Step** Monitor the deployment:
+
+```bash
+# Watch the job status
+oc get jobs -n rhdh-testbed -w
+
+#View logs
+oc logs -f job/rhdh-testbed-setup -n rhdh-testbed
+```
+
+**Step 4.** Access your RHDH instance:
+
+Once the job completes, the RHDH route URL will be displayed in the logs.
+
+### Teardown
+
+To clean up the RHDH deployment
+
+```bash
+# Delete the setup job first
+oc delete job rhdh-testbed-setup -n rhdh-testbed
+
+# Run the teardown job
+oc apply -f deploy/teardown-job.yaml
+
+# Option: Watch teardown progress
+oc logs -f job/rhdh-testbed-teardown -n rhdh-testbed
+```
+
+### Building Your Own Image
+
+If you want to customize the scripts or use your own container registry:
+
+**Step 1.** Build the image:
+
+`docker build -t your-registry/rhdh-testbed:latest .`
+
+**Step 2.** Push to your registry:
+
+`docker push your-registry/rhdh-testbed:latest`
+
+**Step 3.** Update the job manifests to user your image:
+
+```yaml
+# Edit deploy/job.yaml and deploy/teardown-job.yaml
+# Change the image reference:
+#   image: ghcr.io/pataknight/rhdh-testbed:latest
+# To:
+#   image: your-registry/rhdh-testbed:latest
+```
+
+Alternatively, use kustomize to override the image:
+
+```bash
+cd deploy
+kustomize edit set image ghcr.io/pataknight/rhdh-testbed:latest=your-registry/rhdh-testbed:v1.0.0
+oc apply -k .
+```
+
+### Building the Image In-Cluster (Optional)
+
+If you prefer to build the image directly in OpenShift instead of using the pre-built image from ghcr.io:
+
+**Step 1.** Create the namespace and apply the BuildConfig:
+
+```bash
+oc new-project rhdh-testbed
+oc apply -f deploy/build-config.yaml
+```
+
+**Step 2.** Start the build and wait for completion:
+
+`oc start-build rhdh-testbed -n rhdh-testbed --follow`
+
+**Step 3.** Apply the remaining resources and use the internal registry job:
+
+```bash
+oc apply -k deploy/
+oc apply -f deploy/job-internal-registry.yaml
+```
+
+### Teardown
+
+To clean up the RHDH deployment
+
+```bash
+# Delete the setup job first
+oc delete job rhdh-testbed-setup -n rhdh-testbed
+
+# Run the teardown job
+oc apply -f deploy/teardown-job-internal-registry.yaml
+
+# Option: Watch teardown progress
+oc logs -f job/rhdh-testbed-teardown -n rhdh-testbed
+```
+
+\*\*Benefits of building in-cluster:
+
+- No external registry access required
+- Full visibility into build process and logs
+- Easy to customize by forking the repo and updating the BuildConfig git URL
+- Image stays within your cluster's trust boundary
+
+**To use you own fork:**
+
+Edit `deploy/buildconfig.yaml` and change the git URI:
+
+```yaml
+spec:
+  source:
+    git:
+      uri: https://github.com/YOUR-USERNAME/rhdh-testbed.git
+      ref: main # or your branch
+```
+
+### Security Considerations
+
+The Kubernetes Job requires elevated permissions to:
+
+- Create namespaces and projects
+- Install Operators via OLM
+- Create ClusterRoles and ClusterRoleBindings
+- Deploy various workloads and CRDs
+
+**This tool is designed for disposable, non-production clusters.** The included ClusterRole grants broad permissions necessary for the automation. Always review `deploy/cluster-role.yaml` before applying.
+The Job uses a dedicated ServiceAccount (`rhdh-testbed-runner`) that is scoped to only what's necessary for the deployment automation.
 
 ## Next Steps
 

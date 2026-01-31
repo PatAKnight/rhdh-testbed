@@ -1,0 +1,57 @@
+# Optional: Build the testbed image directly in OpenShift
+# This allows you to use the internal registry instead of ghcr.io
+#
+# Usage:
+#   oc apply -f deploy/buildconfig.yaml
+#   oc start-build rhdh-testbed --follow
+#   Then update job.yaml to use the internal image
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: rhdh-testbed
+  namespace: rhdh-testbed
+  labels:
+    app.kubernetes.io/name: rhdh-testbed
+    app.kubernetes.io/component: build
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: rhdh-testbed
+  namespace: rhdh-testbed
+  labels:
+    app.kubernetes.io/name: rhdh-testbed
+    app.kubernetes.io/component: build
+spec:
+  source:
+    type: Git
+    git:
+      # Change this to your fork if customizing
+      uri: https://github.com/PatAKnight/rhdh-testbed.git
+      ref: main
+    # Optional: specify context directory if Dockerfile not in root
+    # contextDir: .
+  strategy:
+    type: Docker
+    dockerStrategy:
+      # Path to Dockerfile relative to contextDir
+      dockerfilePath: Dockerfile
+      # Build args if needed
+      # buildArgs:
+      #   - name: SOME_ARG
+      #     value: some-value
+  output:
+    to:
+      kind: ImageStreamTag
+      name: rhdh-testbed:latest
+  # Optionally trigger rebuild on git changes (requires webhook setup)
+  triggers:
+    - type: ConfigChange
+  resources:
+    limits:
+      cpu: '1'
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi

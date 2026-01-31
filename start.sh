@@ -200,8 +200,20 @@ main() {
 
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+  # Load default variables
   source "${DIR}/env_variables.sh"
-  source "${DIR}/.env"
+
+  # Load .env file if it exists (won't exist when running in-cluster)
+  if [[ -f "${DIR}/.env" ]]; then
+    source "${DIR}/.env"
+    echo "Configuration loaded from .env file"
+  elif [[ -n "${NAMESPACE:-}" ]]; then
+    echo "Configuration loaded from environment variables (in-cluster mode)"
+  else
+    echo "ERROR: No configuration found."
+    echo "Provide a .env file or set environment variables via ConfigMap/Secret."
+    exit 1
+  fi
 
   eval "$DIR/scripts/config-oc-and-helm.sh"
 

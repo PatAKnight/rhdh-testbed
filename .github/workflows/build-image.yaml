@@ -1,0 +1,68 @@
+name: Build and Push Container Image
+
+on:
+  push:
+    branches:
+      - main
+      # Uncomment below to add version branches later:
+      # - 'release-*'
+      # - 'v[0-9]+.[0-9]+'
+    tags:
+      - 'v*' # Also build on version tags (v1.0.0, etc.)
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        # Only login when pushing (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Set 'latest' tag for main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Use branch name as tag
+            type=ref,event=branch
+            # Use tag name for version tags (v1.0.0 -> 1.0.0)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # Use short SHA for all builds
+            type=sha,prefix=
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # Only push on main branch or tags, NOT on PRs
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
