@@ -186,9 +186,8 @@ Key ConfigMap values:
 | RELEASE_NAME     | Helm release name                     | backstage  |
 | K8S_CLUSTER_NAME | Name for you cluster in RHDH          | my-cluster |
 | SIGN_IN_PAGE     | Authentication method (guest or oidc) | guest      |
-| ENABLE_KEYCLOAK  | Deploy Keycloak for SSO               | false      |
-| ENABLE_TEKTON    | Deploy OpenShift Pipelines            | false      |
-| ENABLE_OCM       | Deploy Advanced Cluster Management    | false      |
+
+> **Note:** Plugin enablement is configured via the dynamic plugins ConfigMap (see Step 2c below), not through environment variables
 
 **Step 2b.** Create your secret file using `deploy/secret-template.yaml` as an example:
 
@@ -200,15 +199,65 @@ cp deploy/secret-template.yaml deploy/secret.local.yaml
 oc apply -f deploy/secret.local.yaml -n rhdh-testbed
 ```
 
+**Step 2c.** Configure dynamic plugins:
+
+The testbed detects which plugins you've enabled in your `dynamic-plugins-config.yaml` and automatically deploys any required cluster resources (operators, CRDs, etc.).
+
+**Option A**: Use the default configuration (simplest)
+
+If you don't need custom plugins, the pre-included configuration works out of the box:
+
+```bash
+# Create ConfigMap from the default dynamic plugins config
+oc create configmap rhdh-dynamic-plugins \
+  --from-file=dynamic-plugins.yaml=resources/rhdh/dynamic-plugins-config.yaml \
+  -n rhdh-testbed
+```
+
+**Option B**: Customize which plugins are enabled
+
+For more control over which plugins and operators are deployed:
+
+```bash
+# Copy the default config
+cp resources/rhdh/dynamic-plugins-config.yaml my-plugins-config.yaml
+
+# Edit to enable/disable plugins by setting disabled: false/true
+# For example, to enable Keycloak SSO:
+#   - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
+#     disabled: false  # Change from true to false
+
+# Create ConfigMap from your customized config
+oc create configmap rhdh-dynamic-plugins \
+  --from-file=dynamic-plugins.yaml=my-plugins-config.yaml \
+  -n rhdh-testbed
+```
+Plugins that trigger cluster resource deployment:
+
+| Plugin Pattern                         | What Gets Deployed                    |
+| -------------------------------------- | ------------------------------------- |
+| plugin-catalog-backend-module-keycloak | Red Hat SSO Operator + Keycloak Realm |
+| plugin-tekton                          | OpenShift Pipelines Operator          |
+| plugin-ocm / plugin-ocm-backend        | Advanced Cluster Management Operator  |
+| plugin-3scale-backend                  | 3scale Operator + API Manager         |
+| plugin-kubernetes / plugin-topology    | ServiceAccount token configuration    |
+
+> **Work in Progress:** Not all plugins require cluster resources, and not all plugins that do require resources have been integrated into the automation scripts yet. If you enable a plugin that needs additional setup (like an operator), check the `docs/` folder for manual configuration steps or open an issue if support is missing.
+
 **Step 3.** Apply the deployment resources:
 
 ```bash
 # Apply ServiceAccount, ClusterRole, ClusterRoleBinding, ConfigMap, and Secret
 oc apply -k deploy/
 
+# Verify the dynamic plugins ConfigMap was created (from Step 2c)
+oc get configmap rhdh-dynamic-plugins -n rhdh-testbed
+
 # Start the setup job
 oc apply -f deploy/job.yaml
 ```
+
+> **Note:** The Job mounts the `rhdh-dynamic-plugins` ConfigMap to `/app/resources/user-resources/dynamic-plugins-config.local.yaml`. The setup script reads this to determine which cluster resources to deploy.
 
 **Optional Step** Monitor the deployment:
 
@@ -353,16 +402,21 @@ During setup, a number of editable resources are created under `resources/user-r
 
 ### Enabling Additional Plugins
 
-To add new functionality:
+The testbed uses the standard RHDH `dynamic-plugins.default.yaml format for plugin configuration. To enable a plugin:
 
-1. Review the plugin documentation
-   Understand what the plugin does, its purpose, and any required configuration.
+1. **Edit the dynamic plugins config file:**
+   - Local runs: `resources/user-resources/dynamic-plugins-config.local.yaml`
+   - Kubernetes Job: Create a ConfigMap (see [Option 3](#option-3-deploy-as-kubernetes-job))
 
-2. Enable the plugin
-   Edit `resources/user-resources/dynamic-plugins-config.yaml` and add or update the desired plugin entry.
+2. **Set `disabled: false`** on the plugin(s) you want:
+   - package: ./dynamic-plugins/dist/backstage-community-plugin-tekton
+     disabled: false  # Change from true to false
 
-3. Meet plugin requirements
-   Ensure any required credentials, secrets, or environment variables are set appropriately.
+3. Re-run the setup to apply changes:
+
+   - Local: `./start.sh`
+   - Docker: `docker compose up rhdh-start`
+   - Kubernetes Job: Delete the existing job and recreate it
 
 ### Using the Instance as a Demo Environment
 

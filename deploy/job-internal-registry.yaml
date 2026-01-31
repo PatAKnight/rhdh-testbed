@@ -32,6 +32,11 @@ spec:
           env:
             - name: IN_CLUSTER
               value: 'true'
+          volumeMounts:
+            - name: dynamic-plugins-config
+              mountPath: /app/resources/user-resources/dynamic-plugins-config.local.yaml
+              subPath: dynamic-plugins.yaml
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -39,3 +44,8 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: dynamic-plugins-config
+          configMap:
+            name: rhdh-dynamic-plugins
+            optional: true  # Job works without it (uses defaults)
