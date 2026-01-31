@@ -4,8 +4,6 @@ A collection of resources and scripts to quickly deploy an RHDH instance in Kube
 
 ## Table of Contents
 
-## Table of Contents
-
 - [Background and Purpose](#background-and-purpose)
 - [Outline of this project](#outline-of-this-project)
 - [Running the Scripts](#running-the-scripts)
@@ -232,6 +230,7 @@ oc create configmap rhdh-dynamic-plugins \
   --from-file=dynamic-plugins.yaml=my-plugins-config.yaml \
   -n rhdh-testbed
 ```
+
 Plugins that trigger cluster resource deployment:
 
 | Plugin Pattern                         | What Gets Deployed                    |
@@ -410,10 +409,9 @@ The testbed uses the standard RHDH `dynamic-plugins.default.yaml format for plug
 
 2. **Set `disabled: false`** on the plugin(s) you want:
    - package: ./dynamic-plugins/dist/backstage-community-plugin-tekton
-     disabled: false  # Change from true to false
+     disabled: false # Change from true to false
 
 3. Re-run the setup to apply changes:
-
    - Local: `./start.sh`
    - Docker: `docker compose up rhdh-start`
    - Kubernetes Job: Delete the existing job and recreate it
