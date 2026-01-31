@@ -45,4 +45,4 @@ spec:
         - name: dynamic-plugins-config
           configMap:
             name: rhdh-dynamic-plugins
-            optional: true  # Job works without it (uses defaults)
+            optional: true # Job works without it (uses defaults)
