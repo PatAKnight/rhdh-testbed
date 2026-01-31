@@ -16,7 +16,7 @@ data:
   HELM_REPO_NAME: 'openshift-helm-charts'
   HELM_REPO_URL: 'https://charts.openshift.io'
   HELM_CHART_NAME: 'redhat-developer-hub'
-  HELM_CHART_VERSION: '1.6.0'
+  HELM_CHART_VERSION: '1.9.0'
 
   # Authentication
   SIGN_IN_PAGE: 'guest'
