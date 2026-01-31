@@ -83,11 +83,11 @@ More details about this directory and how to populate it are provided in the plu
 
 There are three ways to run the testbed scripts, depending on your environment and preferences:
 
-| Method             | Best For                                                | Requirements                   |
-| ------------------ | ------------------------------------------------------- | ------------------------------ |
-| **Local**          | Development, quick iterations, full control             | `oc`, `helm` installed locally |
-| **Docker Compose** | macOS users, isolated environment, no local tool setup  | Docker Desktop                 |
-| **Kubernetes Job** | CI/CD pipelines, fully automated, no local tools needed | Cluster access only            |
+| Method                                                   | Best For                                                | Requirements                   |
+| -------------------------------------------------------- | ------------------------------------------------------- | ------------------------------ |
+| **[Local](#option-1-local-installation)**                | Development, quick iterations, full control             | `oc`, `helm` installed locally |
+| **[Docker Compose](#option-2-run-with-docker)**          | macOS users, isolated environment, no local tool setup  | Docker Desktop                 |
+| **[Kubernetes Job](#option-3-deploy-as-kubernetes-job)** | CI/CD pipelines, fully automated, no local tools needed | Cluster access only            |
 
 ### Option 1: Local Installation
 
