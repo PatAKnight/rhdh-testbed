@@ -23,7 +23,7 @@ spec:
         - name: teardown
           # Use image from internal OpenShift registry
           image: image-registry.openshift-image-registry.svc:5000/rhdh-testbed/rhdh-testbed:latest
-          args: ['/app/teardown.sh']
+          args: ["/app/teardown.sh"]
           envFrom:
             - configMapRef:
                 name: rhdh-testbed-config
@@ -31,7 +31,7 @@ spec:
                 name: rhdh-testbed-secrets
           env:
             - name: IN_CLUSTER
-              value: 'true'
+              value: "true"
           volumeMounts:
             - name: dynamic-plugins-config
               mountPath: /app/resources/user-resources/dynamic-plugins-configmap.local.yaml
