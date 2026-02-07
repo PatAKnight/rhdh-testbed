@@ -9,7 +9,36 @@ globs:
 
 # RHDH Plugin Scaffolding Guide
 
-When adding support for a new plugin to this repository, generate ALL of the following components:
+When adding support for a new plugin to this repository, generate ALL of the following components.
+
+---
+
+## IMPORTANT: Security - Never Commit Secrets
+
+**DO NOT include actual secret values in any generated files.**
+
+When working with secrets:
+
+- Use **placeholder values only** (e.g., `''`, `<PLACEHOLDER>`, `changeme`)
+- Secret templates should contain empty strings or obvious placeholders
+- Actual credentials belong in `.env` (gitignored) or user-created `.local.yaml` files
+- Never hardcode tokens, passwords, API keys, or URLs containing credentials
+
+Examples of what NOT to generate:
+
+```yaml
+# BAD - actual values
+GITHUB_TOKEN: 'ghp_xxxxxxxxxxxxxxxxxxxx'
+API_KEY: 'sk-1234567890abcdef'
+```
+
+```yaml
+# GOOD - placeholders only
+GITHUB_TOKEN: ''
+API_KEY: '<PLACEHOLDER>'
+```
+
+---
 
 ## 1. Documentation (`docs/<plugin-name>.md`)
 
@@ -187,7 +216,7 @@ spec:
 
 - Custom resources for the operator
 - ConfigMaps
-- Secrets (templates only - no actual values!)
+- Secrets (**templates with placeholders only** - never include actual credentials)
 - Services, Deployments if needed
 
 **Important**: Only include resources for services that:
