@@ -19,10 +19,10 @@ spec:
           command: ['perl', '-Mbignum=bpi', '-wle', 'print bpi(128)']
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
+              cpu: 5m
+              memory: 10Mi
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 10m
+              memory: 20Mi
       restartPolicy: Never
   backoffLimit: 4
