@@ -2,7 +2,7 @@
 
 ## Description
 
-The `catalog-backend-module-keycloak` plugin enabled integration between Backstage and a Keycloak indentity provider. It ingests users and group data from a configured Keycloak realm directly into the Backstage catalog, allowing centralized identity management to power you software catalog's ownership model.
+The `catalog-backend-module-keycloak` plugin enables integration between Backstage and a Keycloak identity provider. It ingests users and group data from a configured Keycloak realm directly into the Backstage catalog, allowing centralized identity management to power you software catalog's ownership model.
 
 ---
 
@@ -79,7 +79,7 @@ This script performs the minimal steps required for integration:
 - Create the realm, client, users, and groups
 - Does not modify or deploy the RHDH instance
 
-Useful when you already have an RHDH deployment and want to plug in in Keycloak support only.
+Useful when you already have an RHDH deployment and want to plug in Keycloak support only.
 
 ## Demo
 
@@ -95,5 +95,5 @@ This confirms that the catalog is successfully ingesting users from Keycloak
 ## Related Files
 
 - Resources: `resources/keycloak/` - RHSSO/Keycloak CRS and supporting manifests, `resources/operators/` - RHSSO operator subscription
-- Scripts: `scrips/config-keycloak-plugin.sh` - Automates plugin setup
+- Scripts: `scripts/config-keycloak-plugin.sh` - Automates plugin setup
 - Auth: `auth/cluster-secrets/` - Related secrets retrieved from the cluster
