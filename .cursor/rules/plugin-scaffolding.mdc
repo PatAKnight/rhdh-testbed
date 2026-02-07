@@ -1,0 +1,289 @@
+---
+description: Generate scaffolding for new RHDH plugin integrations
+globs:
+  - scripts/config-*-plugin*.sh
+  - resources/**/
+  - docs/*.md
+  - config-plugins.sh
+---
+
+# RHDH Plugin Scaffolding Guide
+
+When adding support for a new plugin to this repository, generate ALL of the following components:
+
+## 1. Documentation (`docs/<plugin-name>.md`)
+
+Create documentation following the template at `docs/plugin-template.md`. Include:
+
+- **Description**: What the plugin does and why it's useful
+- **Manual Setup**: Step-by-step instructions for manual configuration
+- **Automatic Setup**: How to use the scripts (both full deploy and standalone)
+- **Demo**: Verification steps to confirm the plugin is working
+- **Related Files**: Links to scripts, resources, and auth files
+
+Example structure:
+
+```markdown
+# Plugin: `<package-name>`
+
+## Description
+
+<What this plugin enables and its key features>
+
+## How to Configure
+
+### Manual Setup
+
+1. <Step 1>
+2. <Step 2>
+   ...
+
+### Automatic Setup
+
+#### Everything
+
+Requires the `<package-name>` to be enabled by setting `disabled: false`.
+
+./start.sh
+
+#### Just the Integration
+
+./scripts/config-<plugin-name>-plugin.sh
+
+## Demo
+
+<Steps to verify the plugin works>
+
+## Related Files
+
+- `/scripts/config-<plugin-name>-plugin.sh`
+- `/resources/<plugin-name>/`
+```
+
+---
+
+## 2. Configuration Script (`scripts/config-<plugin-name>-plugin.sh`)
+
+Create a script following this pattern
+
+```bash
+#!/bin/bash
+
+# =============================================================================
+# <Plugin Name> Plugin Configuration
+# =============================================================================
+# This script deploys and configures resources required for the <plugin> plugin.
+# =============================================================================
+
+deploy_<plugin>() {
+  # Deploy any operators or prerequisites
+  # Example: oc apply -f $PWD/resources/operators/<plugin>-subscription.yaml
+  echo "Deploying <plugin> operator..."
+}
+
+deploy_<plugin>_resources() {
+  # Wait for operator to be ready
+  SECONDS=0
+  while true; do
+    STATUS=$(oc get csv --namespace=${NAMESPACE} | grep <operator-name> | awk '{print $NF}')
+
+    if [[ "$STATUS" == "Succeeded" ]]; then
+      break
+    fi
+
+    if [[ $SECONDS -ge $TIMEOUT ]]; then
+      echo "Timeout waiting for <plugin> operator to become ready."
+      exit 1
+    fi
+
+    echo "<Plugin> operator not ready yet. Retrying in $INTERVAL seconds..."
+    sleep "$INTERVAL"
+  done
+
+  # Deploy plugin-specific resources
+  oc apply -f $PWD/resources/<plugin>/<resource>.yaml --namespace=${NAMESPACE}
+}
+
+config_secrets_for_<plugin>_plugins() {
+  # Configure secrets in rhdh-secrets.local.yaml
+  # Extract values from deployed resources and update secrets
+
+  # Example:
+  # <PLUGIN>_URL=$(oc get route <plugin> --namespace=${NAMESPACE} -o jsonpath='{.spec.host}')
+  # sed -i "s|<PLUGIN>_URL:.*|<PLUGIN>_URL: $(echo -n "https://$<PLUGIN>_URL" | base64 -w 0)|g" \
+  #   $PWD/resources/user-resources/rhdh-secrets.local.yaml
+}
+
+apply_<plugin>_labels() {
+  # Apply backstage.io/kubernetes-id labels for topology view
+  declare -A patterns=(
+    ["<resource-pattern>"]="backstage.io/kubernetes-id=<plugin-name>"
+  )
+
+  resource_types=("pods" "deployments" "replicasets" "services" "routes")
+
+  for resource in "${resource_types[@]}"; do
+    for pattern in "${!patterns[@]}"; do
+      label="${patterns[$pattern]}"
+      oc get "$resource" -n $NAMESPACE --no-headers -o custom-columns=":metadata.name" 2>/dev/null \
+        | grep "$pattern" \
+        | xargs -I {} oc label "$resource" {} "$label" --overwrite -n $NAMESPACE
+    done
+  done
+}
+
+uninstall_<plugin>() {
+  # Cleanup function for teardown
+  # Delete resources in reverse order
+
+  # Delete plugin resources
+  oc delete -f $PWD/resources/<plugin>/<resource>.yaml --namespace=${NAMESPACE}
+
+  # Uninstall the operator
+  OPERATOR=$(oc get csv --namespace=${NAMESPACE} | grep <operator-name> | awk '{print $1}')
+  oc delete clusterserviceversion $OPERATOR --namespace=${NAMESPACE}
+  oc delete sub <operator>-subscription --namespace=${NAMESPACE}
+}
+
+main() {
+  source "${PWD}/env_variables.sh"
+  source "${PWD}/.env"
+
+  echo "Configuring resources for <Plugin> plugin"
+
+  deploy_<plugin>
+  deploy_<plugin>_resources
+  config_secrets_for_<plugin>_plugins
+  apply_<plugin>_labels
+
+  exit "${OVERALL_RESULT}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main
+fi
+```
+
+## 3. Resource Files (`resources/<plugin-name>/`)
+
+Create resource manifests if the plugin requires additional cluster services:
+
+### Operator Subscription (`resources/operators/<plugin>-subscription.yaml`)
+
+```yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: <plugin>-operator-subscription
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: <operator-name>
+  source: redhat-operators # or community-operators
+  sourceNamespace: openshift-marketplace
+```
+
+### Plugin-specific Resources (`resources/<plugin-name>/`)
+
+- Custom resources for the operator
+- ConfigMaps
+- Secrets (templates only - no actual values!)
+- Services, Deployments if needed
+
+**Important**: Only include resources for services that:
+
+- Can run without commercial licenses
+- Are suitable for demo/testing environments
+- Don't require external dependencies beyond the cluster
+
+## 4. Update `config-plugins.sh`
+
+Add entries to three associative arrays:
+
+### PACKAGE_TO_CATEGORY
+
+```bash
+declare -A PACKAGE_TO_CATEGORY=(
+  # ... existing entries ...
+
+  # <Plugin Name> - requires <what it needs>
+  ["plugin-<plugin-name>-backend"]="<CATEGORY_NAME>"
+  ["plugin-<plugin-name>"]="<CATEGORY_NAME>"
+)
+```
+
+### CATEGORY_SETUP_FUNCTIONS
+
+```bash
+declare -A CATEGORY_SETUP_FUNCTIONS=(
+  # ... existing entries ...
+
+  [<CATEGORY_NAME>]="deploy_<plugin> deploy_<plugin>_resources config_secrets_for_<plugin>_plugins apply_<plugin>_labels"
+)
+```
+
+### CATEGORY_TEARDOWN_FUNCTIONS
+
+```bash
+declare -A CATEGORY_TEARDOWN_FUNCTIONS=(
+  # ... existing entries ...
+
+  [<CATEGORY_NAME>]="uninstall_<plugin>"
+)
+```
+
+## 5. Update Secrets Template (`resources/rhdh/rhdh-secrets.yaml`)
+
+Add placeholder entries for any new environment variables the plugin requires:
+
+```yaml
+stringData:
+  # ... existing entries ...
+
+  # <Plugin Name>
+  <PLUGIN>_URL: ''
+  <PLUGIN>_TOKEN: ''
+  <PLUGIN>_SECRET: ''
+```
+
+Also update `deploy/secret-template.yaml` with the same entries.
+
+## 6. Update `.env.sample` (if user-provided values needed)
+
+If the plugin requires values that cannot be auto-discovered:
+
+```
+# <Plugin Name> Configuration
+<PLUGIN>_EXTERNAL_VALUE="<PLACEHOLDER>"
+```
+
+## Files to Generate Checklist
+
+When scaffolding a new plugin, create/update these files:
+
+- [ ] `docs/<plugin-name>.md` - Documentation
+- [ ] `scripts/config-<plugin-name>-plugin.sh` - Configuration script
+- [ ] `resources/<plugin-name>/` - Resource manifests (if needed)
+- [ ] `resources/operators/<plugin>-subscription.yaml` - Operator subscription (if needed)
+- [ ] `config-plugins.sh` - Add to PACKAGE_TO_CATEGORY, CATEGORY_SETUP_FUNCTIONS, CATEGORY_TEARDOWN_FUNCTIONS
+- [ ] `resources/rhdh/rhdh-secrets.yaml` - Add secret placeholders
+- [ ] `deploy/secret-template.yaml` - Add secret placeholders
+- [ ] `.env.sample` - Add user-provided variables (if any)
+
+## Example: Adding Support for "Ansible" Plugin
+
+If asked to add Ansible plugin support:
+
+1. Create docs/ansible.md using template
+2. Create scripts/config-ansible-plugin.sh with deploy/config/teardown functions
+3. Create resources/ansible/ with AWX or AAP manifests (if available without license)
+4. Create resources/operators/ansible-subscription.yaml for the operator
+5. Update config-plugins.sh:
+
+   ```bash
+    ["plugin-ansible"]="ANSIBLE"
+    [ANSIBLE]="deploy_ansible deploy_ansible_resources config_secrets_for_ansible_plugins"
+    [ANSIBLE]="uninstall_ansible"
+   ```
+
+6. Update secrets template with `ANSIBLE_URL`, `ANSIBLE_TOKEN`, etc.
