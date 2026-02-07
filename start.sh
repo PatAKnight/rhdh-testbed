@@ -166,7 +166,7 @@ detect_user_credentials() {
   USER_CREDENTIALS=$(echo "$USER_CREDENTIALS_ENCODED" | base64 -d)
   if [[ -n "$USER_CREDENTIALS" ]]; then
     echo "The user credentials for your RHDH instances are:"
-    echo "  Username: super-user, Password: $USER_CREDENTIALS"
+    echo "  Username: super_user, Password: $USER_CREDENTIALS"
   fi
 }
 
