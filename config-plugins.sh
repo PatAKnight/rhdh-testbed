@@ -7,7 +7,7 @@ for file in ${DIR}/scripts/*.sh; do source $file; done
 # Plugin Detection by Package Pattern
 # =============================================================================
 # Maps package name patterns to the category of setup required.
-# When a user enables a plugin in dynamic-plugins-config.yaml,
+# When a user enables a plugin in dynamic-plugins-configmap.yaml,
 # we detect it here and run the appropriate cluster setup.
 #
 # Format: [pattern]="category"
@@ -55,7 +55,7 @@ declare -A CATEGORY_TEARDOWN_FUNCTIONS=(
 )
 
 # =============================================================================
-# Parse dynamic-plugins-config.yaml for enabled plugins
+# Parse dynamic-plugins-configmap.yaml for enabled plugins
 # =============================================================================
 
 get_enabled_plugins_from_config() {
@@ -63,7 +63,7 @@ get_enabled_plugins_from_config() {
   local enabled_packages=()
 
   if [[ ! -f "$config_file" ]]; then
-    echo "WARNING: dynamic-plugins-config.yaml not found at $config_file"
+    echo "WARNING: dynamic-plugins-configmap.yaml not found at $config_file"
     return 1
   fi
 
@@ -180,7 +180,7 @@ main() {
   fi
 
   # Determine config file path
-  local config_file="${CONFIGMAP_FILE:-${DIR}/resources/user-resources/dynamic-plugins-config.local.yaml}"
+  local config_file="${CONFIGMAP_FILE:-${DIR}/resources/user-resources/dynamic-plugins-configmap.local.yaml}"
 
   echo ""
   echo "=============================================="
