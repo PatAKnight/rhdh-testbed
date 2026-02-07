@@ -1,0 +1,138 @@
+name: Sync Dynamic Plugins Config
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Weekly on Monday at 8am UTC
+  workflow_dispatch:
+    inputs:
+      rhdh_ref:
+        description: 'RHDH branch or tag to sync from (e.g., main, rhdh-1.9)'
+        default: 'main'
+        required: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream config
+        id: fetch
+        run: |
+          REF="${{ github.event.inputs.rhdh_ref || 'main' }}"
+          echo "Fetching from RHDH ref: $REF"
+          echo "rhdh_ref=$REF" >> $GITHUB_OUTPUT
+
+          HTTP_STATUS=$(curl -sL -w "%{http_code}" \
+            "https://raw.githubusercontent.com/redhat-developer/rhdh/${REF}/dynamic-plugins.default.yaml" \
+            -o resources/rhdh/dynamic-plugins.default.yaml.new)
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: Failed to fetch from upstream (HTTP $HTTP_STATUS)"
+            echo "Check that the ref '$REF' exists in the RHDH repository"
+            exit 1
+          fi
+
+          echo "Successfully fetched dynamic-plugins.default.yaml"
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if [ ! -f resources/rhdh/dynamic-plugins.default.yaml ]; then
+            echo "No existing file - this is a new sync"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            mv resources/rhdh/dynamic-plugins.default.yaml.new resources/rhdh/dynamic-plugins.default.yaml
+          elif diff -q resources/rhdh/dynamic-plugins.default.yaml resources/rhdh/dynamic-plugins.default.yaml.new > /dev/null 2>&1; then
+            echo "No changes detected"
+            echo "changed=false" >> $GITHUB_OUTPUT
+            rm resources/rhdh/dynamic-plugins.default.yaml.new
+          else
+            echo "Changes detected in upstream config"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            mv resources/rhdh/dynamic-plugins.default.yaml.new resources/rhdh/dynamic-plugins.default.yaml
+          fi
+
+      - name: Generate ConfigMap
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          cat > resources/rhdh/dynamic-plugins-configmap.yaml << 'CONFIGMAP_HEADER'
+          # AUTO-GENERATED - Do not edit directly
+          # Source: dynamic-plugins.default.yaml from upstream RHDH
+          # To regenerate locally: ./scripts/generate-configmap.sh
+          #
+          # This ConfigMap is applied to the cluster and consumed by RHDH
+          # for dynamic plugin configuration.
+          kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: rhdh-dynamic-plugins
+            labels:
+              backstage.io/kubernetes-id: developer-hub
+          data:
+            dynamic-plugins.yaml: |
+          CONFIGMAP_HEADER
+
+          # Indent the YAML content (6 spaces for ConfigMap data block)
+          sed 's/^/      /' resources/rhdh/dynamic-plugins.default.yaml >> resources/rhdh/dynamic-plugins-configmap.yaml
+
+          echo "Generated ConfigMap at resources/rhdh/dynamic-plugins-configmap.yaml"
+
+      - name: Generate diff summary
+        if: steps.diff.outputs.changed == 'true'
+        id: summary
+        run: |
+          # Count plugins in new config
+          PLUGIN_COUNT=$(grep -c "^- package:" resources/rhdh/dynamic-plugins.default.yaml || echo "0")
+          echo "plugin_count=$PLUGIN_COUNT" >> $GITHUB_OUTPUT
+
+          # Get list of environment variables used
+          ENV_VARS=$(grep -oE '\$\{[A-Z_]+\}' resources/rhdh/dynamic-plugins.default.yaml | sort -u | tr '\n' ' ' || echo "none")
+          echo "Environment variables found: $ENV_VARS"
+
+      - name: Create Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'chore: sync dynamic-plugins config from upstream RHDH'
+          title: '[Auto] Update dynamic-plugins config from RHDH (${{ steps.fetch.outputs.rhdh_ref }})'
+          body: |
+            ## Automated Sync from Upstream RHDH
+
+            This PR updates the dynamic plugins configuration from upstream RHDH.
+
+            **Source:** `redhat-developer/rhdh` (ref: `${{ steps.fetch.outputs.rhdh_ref }}`)
+            **Plugins:** ~${{ steps.summary.outputs.plugin_count }} plugin entries
+
+            ### Files Updated
+            - `resources/rhdh/dynamic-plugins.default.yaml` - Raw config from upstream
+            - `resources/rhdh/dynamic-plugins-configmap.yaml` - Generated ConfigMap for deployment
+
+            ### Review Checklist
+            - [ ] Review plugin changes (added/removed/modified)
+            - [ ] Check if any environment variable names changed
+            - [ ] Update scripts if variable names changed
+            - [ ] Update `.env.sample` if new variables were added
+            - [ ] Test deployment locally
+
+            ### How to Review
+
+            ```bash
+            # See what changed
+            git diff main -- resources/rhdh/dynamic-plugins.default.yaml
+
+            # List all environment variables in config
+            grep -oE '\$\{[A-Z_]+\}' resources/rhdh/dynamic-plugins.default.yaml | sort -u
+            ```
+
+            ---
+            *This PR was automatically created by the sync-dynamic-plugins workflow.*
+          branch: auto/sync-dynamic-plugins
+          labels: |
+            automated
+            dependencies
+          delete-branch: true

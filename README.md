@@ -79,6 +79,35 @@ The `/auth` directory is intended to store sensitive configuration files used by
 
 More details about this directory and how to populate it are provided in the plugin specific documentation.
 
+## Plugin Configuration
+
+This project uses the upstream RHDH `dynamic-plugins.default.yaml` directly, keeping configuration in sync with official releases.
+
+### Automatic Sync from Upstream
+
+A GitHub Action (`sync-dynmaic-plugins.yaml`) automatically:
+
+- Fetches the latest `dynamic-plugins.default.yaml` from upstream RHDH
+- Generates a ConfigMap version (`dynamic-plugins.default.yaml`)
+- Creates a PR when changes are detected
+
+The sync runs weekly and can be triggered manually via workflow_dispatch
+
+### File
+
+| File | Purpose |
+| ---- | ------\_ |
+| `resources/rhdh/dynamic-plugins.default.yaml` | Synced from upstream RHDH (do not edit) |
+| `resources/rhdh/dynamic-plugins-configmap.yaml` | Generated ConfigMap for deployment |
+
+### Regenerating the ConfigMap Locally
+
+If you need to regenerate the ConfigMap after manually updating the default file:
+
+```bash
+./scripts/generate-configmap.sh [namespace]`
+```
+
 ## Running the Scripts
 
 There are three ways to run the testbed scripts, depending on your environment and preferences:
@@ -199,7 +228,7 @@ oc apply -f deploy/secret.local.yaml -n rhdh-testbed
 
 **Step 2c.** Configure dynamic plugins:
 
-The testbed detects which plugins you've enabled in your `dynamic-plugins-config.yaml` and automatically deploys any required cluster resources (operators, CRDs, etc.).
+The testbed detects which plugins you've enabled in your `dynamic-plugins-configmap.yaml` and automatically deploys any required cluster resources (operators, CRDs, etc.).
 
 **Option A**: Use the default configuration (simplest)
 
@@ -208,7 +237,7 @@ If you don't need custom plugins, the pre-included configuration works out of th
 ```bash
 # Create ConfigMap from the default dynamic plugins config
 oc create configmap rhdh-dynamic-plugins \
-  --from-file=dynamic-plugins.yaml=resources/rhdh/dynamic-plugins-config.yaml \
+  --from-file=dynamic-plugins.yaml=resources/rhdh/dynamic-plugins-configmap.yaml \
   -n rhdh-testbed
 ```
 
@@ -218,7 +247,7 @@ For more control over which plugins and operators are deployed:
 
 ```bash
 # Copy the default config
-cp resources/rhdh/dynamic-plugins-config.yaml my-plugins-config.yaml
+cp resources/rhdh/dynamic-plugins-configmap.yaml my-plugins-config.yaml
 
 # Edit to enable/disable plugins by setting disabled: false/true
 # For example, to enable Keycloak SSO:
@@ -256,7 +285,7 @@ oc get configmap rhdh-dynamic-plugins -n rhdh-testbed
 oc apply -f deploy/job.yaml
 ```
 
-> **Note:** The Job mounts the `rhdh-dynamic-plugins` ConfigMap to `/app/resources/user-resources/dynamic-plugins-config.local.yaml`. The setup script reads this to determine which cluster resources to deploy.
+> **Note:** The Job mounts the `rhdh-dynamic-plugins` ConfigMap to `/app/resources/user-resources/dynamic-plugins-configmap.local.yaml`. The setup script reads this to determine which cluster resources to deploy.
 
 **Optional Step** Monitor the deployment:
 
@@ -272,7 +301,7 @@ oc logs -f job/rhdh-testbed-setup -n rhdh-testbed
 
 Once the job completes, the RHDH route URL will be displayed in the logs.
 
-### Teardown
+### Teardown using pre-built images
 
 To clean up the RHDH deployment
 
@@ -339,7 +368,7 @@ oc apply -k deploy/
 oc apply -f deploy/job-internal-registry.yaml
 ```
 
-### Teardown
+### Teardown using cluster images
 
 To clean up the RHDH deployment
 
@@ -404,7 +433,7 @@ During setup, a number of editable resources are created under `resources/user-r
 The testbed uses the standard RHDH `dynamic-plugins.default.yaml format for plugin configuration. To enable a plugin:
 
 1. **Edit the dynamic plugins config file:**
-   - Local runs: `resources/user-resources/dynamic-plugins-config.local.yaml`
+   - Local runs: `resources/user-resources/dynamic-plugins-configmap.local.yaml`
    - Kubernetes Job: Create a ConfigMap (see [Option 3](#option-3-deploy-as-kubernetes-job))
 
 2. **Set `disabled: false`** on the plugin(s) you want:
