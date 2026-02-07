@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: rhdh-start-scripts
 
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: backstage-app
@@ -32,8 +32,8 @@ spec:
             - 'tail -f /dev/null'
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
+              cpu: 5m
+              memory: 10Mi
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 10m
+              memory: 20Mi
