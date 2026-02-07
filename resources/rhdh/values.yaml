@@ -40,6 +40,8 @@ upstream:
     extraVolumeMounts:
       - name: dynamic-plugins-root
         mountPath: /opt/app-root/src/dynamic-plugins-root
+      - name: extensions-catalog
+        mountPath: /extensions
       - name: temp
         mountPath: /tmp
       - name: rbac-policy
@@ -47,6 +49,7 @@ upstream:
       - name: catalog-entities
         mountPath: /opt/app-root/src/catalog-entities
     extraVolumes:
+      # -- Ephemeral volume that will contain the dynamic plugins installed by the initContainer below at start.
       - name: dynamic-plugins-root
         ephemeral:
           volumeClaimTemplate:
@@ -57,6 +60,8 @@ upstream:
                 requests:
                   # -- Size of the volume that will contain the dynamic plugins. It should be large enough to contain all the plugins.
                   storage: 5Gi
+      # Volume that will expose the `dynamic-plugins.yaml` file from the `dynamic-plugins` config map.
+      # The `dynamic-plugins` config map is created by the helm chart from the content of the `global.dynamic` field.
       - name: dynamic-plugins
         configMap:
           defaultMode: 420
@@ -77,6 +82,10 @@ upstream:
           optional: true
           secretName: '{{ printf "%s-dynamic-plugins-registry-auth" .Release.Name }}'
       - name: npmcacache
+        emptyDir: {}
+      # -- Ephemeral volume used by the install-dynamic-plugins init container to extract catalog entities from the catalog index image.
+      # Mounted at the /extensions path in the backstage-backend main container for automatic discovery by the extension catalog backend providers.
+      - name: extensions-catalog
         emptyDir: {}
       - name: temp
         emptyDir: {}
