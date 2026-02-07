@@ -73,7 +73,7 @@ oc_login() {
     fi
     
     oc login --token="${K8S_CLUSTER_TOKEN}" \
-             --server="${K8S_CLUSTER_URL}" \
+             --server="${K8S_CLUSTER_URL}"
   fi
   
   # Verify login succeeded to the correct cluster
