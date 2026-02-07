@@ -81,7 +81,7 @@ get_enabled_plugins_from_config() {
 
   while IFS= read -r line; do
     #Check for package line
-    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*package:[[:space:]]*.* ]]; then
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*package:[[:space:]]*(.*)$ ]]; then
       current_package="${BASH_REMATCH[1]}"
       in_plugin_block=true
     # Check for disabled line within a plugin block
@@ -114,7 +114,7 @@ detect_required_categories() {
     for pattern in "${!PACKAGE_TO_CATEGORY[@]}"; do
       if echo "$package" | grep -qE "$pattern"; then
         local category="${PACKAGE_TO_CATEGORY[$pattern]}"
-        if [[ -z "${categories_needed[$category]}" ]]; then
+        if [[ -z "${categories_needed[$category]:-}" ]]; then
           categories_needed["$category"]=1
           echo "  ✓ Detected: $category (matched: $package)"
         fi
