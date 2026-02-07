@@ -28,6 +28,7 @@ Closes #(issue number)
 - [ ] I have read the [CONTRIBUTING](../CONTRIBUTING.md) guide
 - [ ] My code follows the project's code conventions
 - [ ] I have tested my changes against a real cluster
+- [ ] If upgrading RHDH version, verified `values.yaml` is compatible with new chart
 
 ### Security
 
