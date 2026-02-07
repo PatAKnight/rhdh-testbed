@@ -286,6 +286,80 @@ If the plugin requires values that cannot be auto-discovered:
 <PLUGIN>_EXTERNAL_VALUE="<PLACEHOLDER>"
 ```
 
+## 7. Catalog Entities (`resources/catalog-entities/`)
+
+If the plugin deploys resources to the cluster (operators, services, etc.), create catalog entities so they appear in the RHDH catalog.
+
+### Entity Types
+
+| File              | Entity Kind | Use For                               |
+| ----------------- | ----------- | ------------------------------------- |
+| `operators.yaml`  | Resource    | Operators and their CRs               |
+| `components.yaml` | Component   | Services, applications                |
+| `plugins.yaml`    | Location    | Links to upstream plugin catalog-info |
+| `resources.yaml`  | Resource    | Other infrastructure resources        |
+
+### Operator Entity Template
+
+Add to `resources/catalog-entities/operators.yaml`:
+
+```yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: <operator-name>
+  title: <Operator Display Name>
+  description: <What the operator does>
+  annotations:
+    backstage.io/kubernetes-id: <operator-name>
+    backstage.io/kubernetes-namespace: <namespace>
+spec:
+  type: operator
+  owner: cluster-admins
+  dependencyOf: component:default/<plugin-component>
+  dependsOn:
+    - resource:default/test-cluster
+```
+
+### Custom Resource Entity Template
+
+For CRs deployed by operators:
+
+```yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: <cr-name>
+  title: <CR Display Name>
+  description: <What this CR provides>
+  annotations:
+    backstage.io/kubernetes-id: <cr-name>
+    backstage.io/kubernetes-namespace: <namespace>
+  links:
+    - url: <documentation-url>
+      title: Documentation
+      icon: web
+spec:
+  type: <resource-type>
+  lifecycle: production
+  owner: cluster-admins
+  dependencyOf: component:default/<plugin-component>
+  dependsOn:
+    - resource:default/<operator-name>
+```
+
+### Important Annotations
+
+- `backstage.io/kubernetes-id`: Must match the label applied in `apply_<plugin>_labels()` function
+- `backstage.io/kubernetes-namespace`: Namespace where the resource is deployed
+
+### Relationships
+
+- `dependsOn`: Resource this entity requires (e.g., operator depends on cluster)
+- `dependencyOf`: Component/plugin that uses this resource
+
 ## Files to Generate Checklist
 
 When scaffolding a new plugin, create/update these files:
@@ -298,6 +372,10 @@ When scaffolding a new plugin, create/update these files:
 - [ ] `resources/rhdh/rhdh-secrets.yaml` - Add secret placeholders
 - [ ] `deploy/secret-template.yaml` - Add secret placeholders
 - [ ] `.env.sample` - Add user-provided variables (if any)
+- [ ] Add operator entity to `operators.yaml`
+- [ ] Add CR entities to `operators.yaml` or `resources.yaml`
+- [ ] Ensure `backstage.io/kubernetes-id` matches labels in the config script
+- [ ] Define proper `dependsOn`/`dependencyOf` relationships
 
 ## Example: Adding Support for "Ansible" Plugin
 
