@@ -1,0 +1,121 @@
+name: Update RHDH Version
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Weekly on Monday at 9am UTC (after plugin sync)
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: 'Specific version to update to (leave empty for latest)'
+        required: false
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add Helm repo and get latest version
+        id: helm
+        run: |
+          helm repo add openshift-helm-charts https://charts.openshift.io
+          helm repo update
+
+          # Get latest version or use specified version
+          if [[ -n "${{ github.event.inputs.target_version }}" ]]; then
+            LATEST_VERSION="${{ github.event.inputs.target_version }}"
+          else
+            LATEST_VERSION=$(helm search repo openshift-helm-charts/redhat-developer-hub --versions | awk 'NR==2 {print $2}')
+          fi
+
+          # Get current version
+          CURRENT_VERSION=$(grep 'HELM_CHART_VERSION=' env_variables.sh | cut -d'=' -f2)
+
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+          if [[ "$CURRENT_VERSION" != "$LATEST_VERSION" ]]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update version
+        if: steps.helm.outputs.needs_update == 'true'
+        run: |
+          sed -i "s/HELM_CHART_VERSION=.*/HELM_CHART_VERSION=${{ steps.helm.outputs.latest }}/" env_variables.sh
+          echo "Updated HELM_CHART_VERSION from ${{ steps.helm.outputs.current }} to ${{ steps.helm.outputs.latest }}"
+
+      - name: Sync dynamic plugins
+        if: steps.helm.outputs.needs_update == 'true'
+        run: |
+          # Sync from the same branch in RHDH (main -> main, release-1.9 -> release-1.9)
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "Syncing dynamic-plugins.default.yaml from RHDH branch: $BRANCH"
+
+          curl -sfL "https://raw.githubusercontent.com/redhat-developer/rhdh/${BRANCH}/dynamic-plugins.default.yaml" \
+            -o resources/rhdh/dynamic-plugins.default.yaml || {
+              echo "ERROR: Could not fetch from branch $BRANCH"
+              exit 1
+            }
+
+      - name: Generate ConfigMap
+        if: steps.helm.outputs.needs_update == 'true'
+        run: |
+          cat > resources/rhdh/dynamic-plugins-configmap.yaml << 'CONFIGMAP_HEADER'
+          # AUTO-GENERATED - Do not edit directly
+          # Source: dynamic-plugins.default.yaml from upstream RHDH
+          # To regenerate locally: ./scripts/generate-configmap.sh
+          #
+          # This ConfigMap is applied to the cluster and consumed by RHDH
+          # for dynamic plugin configuration.
+          kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: rhdh-dynamic-plugins
+            labels:
+              backstage.io/kubernetes-id: developer-hub
+          data:
+            dynamic-plugins.yaml: |
+          CONFIGMAP_HEADER
+
+          # Indent the YAML content (6 spaces for ConfigMap data block) and Remove leading spaces only from comment lines before 'plugins:'
+          awk '
+            /^[[:space:]]*plugins:/ { found=1 }
+            !found && /^[[:space:]]*#/ { sub(/^[[:space:]]+/, "") }
+            { print "    " $0 }
+          ' resources/rhdh/dynamic-plugins.default.yaml >> resources/rhdh/dynamic-plugins-configmap.yaml
+
+          echo "Generated ConfigMap at resources/rhdh/dynamic-plugins-configmap.yaml"
+
+      - name: Create Pull Request
+        if: steps.helm.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'chore: update RHDH to version ${{ steps.helm.outputs.latest }}'
+          title: '[Auto] Update RHDH to ${{ steps.helm.outputs.latest }}'
+          body: |
+            ## RHDH Version Update
+
+            Updates Red Hat Developer Hub from **${{ steps.helm.outputs.current }}** to **${{ steps.helm.outputs.latest }}**
+
+            ### Changes
+            - Updated `HELM_CHART_VERSION` in `env_variables.sh`
+            - Updated `dynamic-plugins.default.yaml` (if available for this version)
+            - Regenerated `dynamic-plugins-configmap.yaml`
+
+            ### Review Checklist
+            - [ ] Review RHDH release notes for breaking changes
+            - [ ] Check if any scripts need updates for new plugin configurations
+            - [ ] Test deployment locally
+
+            [RHDH Release Notes](https://github.com/redhat-developer/rhdh/releases)
+          branch: auto/update-rhdh-version
+          labels: |
+            automated
+            dependencies
+          delete-branch: true

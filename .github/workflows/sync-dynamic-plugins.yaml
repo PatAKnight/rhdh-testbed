@@ -7,7 +7,7 @@ on:
     inputs:
       rhdh_ref:
         description: 'RHDH branch or tag to sync from (e.g., main, rhdh-1.9)'
-        default: 'main'
+        default: ''
         required: false
 
 jobs:
@@ -24,7 +24,8 @@ jobs:
       - name: Fetch upstream config
         id: fetch
         run: |
-          REF="${{ github.event.inputs.rhdh_ref || 'main' }}"
+          # Use input if provided, otherwise use current branch name
+          REF="${{ github.event.inputs.rhdh_ref || github.ref_name }}"
           echo "Fetching from RHDH ref: $REF"
           echo "rhdh_ref=$REF" >> $GITHUB_OUTPUT
 
@@ -77,8 +78,12 @@ jobs:
             dynamic-plugins.yaml: |
           CONFIGMAP_HEADER
 
-          # Indent the YAML content (6 spaces for ConfigMap data block)
-          sed 's/^/      /' resources/rhdh/dynamic-plugins.default.yaml >> resources/rhdh/dynamic-plugins-configmap.yaml
+          # Indent the YAML content (6 spaces for ConfigMap data block) and Remove leading spaces only from comment lines before 'plugins:'
+          awk '
+            /^[[:space:]]*plugins:/ { found=1 }
+            !found && /^[[:space:]]*#/ { sub(/^[[:space:]]+/, "") }
+            { print "    " $0 }
+          ' resources/rhdh/dynamic-plugins.default.yaml >> resources/rhdh/dynamic-plugins-configmap.yaml
 
           echo "Generated ConfigMap at resources/rhdh/dynamic-plugins-configmap.yaml"
 
