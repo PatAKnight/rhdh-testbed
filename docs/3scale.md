@@ -18,19 +18,16 @@ You can configure this plugin either manually or automatically using the provide
    - Deploy an `APIManager` custom resource.
    - Create and configure `ActiveDoc` custom resources that define the APIs to be exposed.
 2. Ingest into RHDH:
-
    - Ensure that you have enabled the 3scale backend plugin.
-   - Update your `app-config.yaml` to include the 3scale provider configuration under `catalog.providers.3scale`.
+   - Update your `app-config.yaml` to include the 3scale provider configuration under `catalog.providers.threeScaleApiEntity`.
 
      ```YAML
      catalog:
        providers:
-         keycloakOrg:
+         threeScaleApiEntity:
            default:
-             baseUrl: ${KEYCLOAK_BASE_URL}
-             realm: ${KEYCLOAK_REALM}
-             clientId: ${KEYCLOAK_CLIENT_ID}
-             clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+             baseUrl: ${THREESCALE_BASE_URL}
+             accessToken: ${THREESCALE_ACCESS_TOKEN}
      ```
 
    - Backstage should then auto-ingest APIs exposed via 3scale `ActiveDoc` into the catalog
@@ -77,7 +74,7 @@ This script will just install the minimal required for integrating with an RHDH 
 
 ## Demo
 
-1. Got to you RHDH instance.
+1. Go to your RHDH instance.
 2. Open the Catalog.
 3. Change the filter to APIs.
 4. Look for the API `pet-store` or others ingested from 3scale.
@@ -85,7 +82,7 @@ This script will just install the minimal required for integrating with an RHDH 
 
 ## Related Files
 
-- `scrips/config-3scale-plugin.sh` - Automates plugin setup
+- `scripts/config-3scale-plugin.sh` - Automates plugin setup
 - `/resources/3scale/` - 3scale CRs and supporting manifests
 - `/resources/operators/` - 3scale operator subscription
 

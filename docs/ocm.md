@@ -29,7 +29,7 @@ catalog:
       env:
         name: ${OCM_HUB_NAME}
         url: ${OCM_HUB_URL}
-        serviceAccountToken: ${OCM_HUB_TOKEN}
+        serviceAccountToken: ${OCM_SA_TOKEN}
 ```
 
 ---
@@ -55,7 +55,7 @@ Running `start.sh` will:
 
 #### Just the Integration
 
-Running `scripts/configure-ocm-plugins.sh` will:
+Running `scripts/config-ocm-plugins.sh` will:
 
 - Ensure the ACM operator is installed
 - Deploy the `MultiClusterHub` CR
@@ -63,7 +63,7 @@ Running `scripts/configure-ocm-plugins.sh` will:
 **Run:**
 
 ```bash
-scripts/config-ocm-plugin.sh
+scripts/config-ocm-plugins.sh
 ```
 
 ## Demo
@@ -83,6 +83,6 @@ Demo verification:
 ## Related Files
 
 - `resources/ocm/` - ACM specific Kubernetes manifests (e.g., MultiClusterHub)
-- `scripts/config-ocm-plugin.sh` - performs the automatic setup for ACM integration
+- `scripts/config-ocm-plugins.sh` - performs the automatic setup for ACM integration
 - `auth/cluster-secrets/` - Related secrets retrieved from the cluster
 - `resources/operators/` - Subscription for the ACM operator

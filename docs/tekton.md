@@ -2,7 +2,7 @@
 
 ## Description
 
-The Tekton plugin allows RHDH to visualize and track CI/CD workflows defined and run using Tekton Pipelines. This plugin integrates tightly with OpenShift Pipelines to surface `PipelineRuns`, `Tasks`, `Pipelines`, and their statues inside the RHDH UI.
+The Tekton plugin allows RHDH to visualize and track CI/CD workflows defined and run using Tekton Pipelines. This plugin integrates tightly with OpenShift Pipelines to surface `PipelineRuns`, `Tasks`, `Pipelines`, and their statuses inside the RHDH UI.
 
 ---
 
@@ -22,7 +22,6 @@ To manually configure this plugin:
      `resources/tekton/hello-world-pipeline-run.yaml`
      `resources/tekton/hello-world-pipeline.yaml`
 3. Ensure that the `backstage-plugin-kubernetes` plugins have been configured and enabled
-
    - The following `customResources` is added in the `app-config.yaml
 
    ```YAML
@@ -88,9 +87,9 @@ This is useful if you already have a Backstage instance up and want to bolt on j
 ## Related Files
 
 - Resources: `resources/tekton/` - Tekton CRs and supporting manifests, `resources/operators/` - OpenShift Pipelines operator subscription
-- Scripts: `scrips/config-tekton-plugin.sh` - Automates plugin setup
+- Scripts: `scripts/config-tekton-plugin.sh` - Automates plugin setup
 
 ## Notes
 
-- This plugin is required for the setup of additional plugins and will need to be configured to ensure those plugins are successfully enabled
-  - List the plugins
+- The Kubernetes plugin must be configured before using the Tekton plugin, as Tekton relies on the Kubernetes integration to fetch pipeline data.
+- Entities must have the `backstage.io/kubernetes-id` annotation to display Tekton data.
