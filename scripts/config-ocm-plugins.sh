@@ -31,8 +31,18 @@ deploy_multicluster_hub() {
 }
 
 config_secrets_for_ocm_plugins() {
+  # OCM_HUB_NAME - user provided via .env
   sed -i "s|OCM_HUB_NAME:.*|OCM_HUB_NAME: $(echo -n "$OCM_HUB_NAME" | base64)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
-  sed -i "s|OCM_HUB_OWNERS:.*|OCM_HUB_OWNERS: $(echo -n "$OCM_HUB_OWNERS" | base64)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  
+  # OCM_HUB_URL - get from multiclusterhub API route
+  OCM_HUB_URL=$(oc get route multicloud-console -n open-cluster-management -o jsonpath='{.spec.host}' 2>/dev/null)
+  if [[ -n "$OCM_HUB_URL" ]]; then
+    sed -i "s|OCM_HUB_URL:.*|OCM_HUB_URL: $(echo -n "https://$OCM_HUB_URL" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  fi
+  
+  # OCM_SA_TOKEN - reuse the same token from rhdh-k8s-plugin-secret
+  TOKEN=$(oc get secret rhdh-k8s-plugin-secret --namespace=${NAMESPACE} -o jsonpath='{.data.token}')
+  sed -i "s|OCM_SA_TOKEN:.*|OCM_SA_TOKEN: $TOKEN|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
 }
 
 # TODO: Need to review all of the resources that are created through ACM and MultiClusterHub
