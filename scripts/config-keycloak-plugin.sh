@@ -66,6 +66,7 @@ config_secrets_for_keycloak_plugins() {
   sed -i "s|KEYCLOAK_BASE_URL:.*|KEYCLOAK_BASE_URL: $(echo -n "https://$KEYCLOAK_BASE_URL/auth" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
   KEYCLOAK_REALM=$(oc get keycloakrealm keycloak --namespace=${NAMESPACE} -o jsonpath='{.spec.realm.realm}')
   sed -i "s|KEYCLOAK_REALM:.*|KEYCLOAK_REALM: $(echo -n "$KEYCLOAK_REALM" | base64)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  sed -i "s|KEYCLOAK_LOGIN_REALM:.*|KEYCLOAK_LOGIN_REALM: $(echo -n "$KEYCLOAK_REALM" | base64)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
 
   # We prefer to login using Keycloak and OIDC, so we go ahead and set the sign in page to OIDC
   sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "oidc" | base64)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
