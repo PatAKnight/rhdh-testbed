@@ -15,7 +15,7 @@ A collection of resources and scripts to quickly deploy an RHDH instance in Kube
 
 ## Background and Purpose
 
-These scripts were created out of a need to quickly spin up an RHDH instance preconfigured for testing. The goal is to streamline the process of deploying Red Hat Developer Hub with preconfigured plugins and supporting resources, making it easy for team members, especially those working on plugins, to verify changes, report bugs, and explore features in a real environment. It also serves as a practical example of how RHDH and its plugins can be integrated and showcased.
+Theses scripts were created out of a need to quickly spin up an RHDH instance preconfigured for testing. The goal is to streamline the process of deploying Red Hat Developer Hub with preconfigured plugins and supporting resources, making it easy for team members, especially those working on plugins, to verify changes, report bugs, and explore features in a real environment. It also serves as a practical example of how RHDH and its plugins can be integrated and showcased.
 
 ### What the Script Does
 
