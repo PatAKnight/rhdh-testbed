@@ -18,11 +18,11 @@ check_for_local_config_files() {
   fi
 
   # Check if the local dynamic plugins exists
-  if [ -f "$PWD/resources/user-resources/dynamic-plugins-config.local.yaml" ]; then
+  if [ -f "$PWD/resources/user-resources/dynamic-plugins-configmap.local.yaml" ]; then
     echo "Local Dynamic Plugins Config file already exists"
   else
     echo "Dynamic Plugins Config does not exist, copying starting Dynamic Plugins Config"
-    cp $PWD/resources/rhdh/dynamic-plugins-config.yaml $PWD/resources/user-resources/dynamic-plugins-config.local.yaml
+    cp $PWD/resources/rhdh/dynamic-plugins-configmap.yaml $PWD/resources/user-resources/dynamic-plugins-configmap.local.yaml
   fi
 
   # Check if the local RBAC Policies files exists
@@ -148,7 +148,7 @@ deploy_resources() {
 apply_user_configs() {
   oc apply -f $PWD/resources/user-resources/rbac-policies.local.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/user-resources/app-config-rhdh.local.yaml --namespace=${NAMESPACE}
-  oc apply -f $PWD/resources/user-resources/dynamic-plugins-config.local.yaml --namespace=${NAMESPACE}
+  oc apply -f $PWD/resources/user-resources/dynamic-plugins-configmap.local.yaml --namespace=${NAMESPACE}
 
   if [[ -n "$SIGN_IN_PAGE" ]]; then
     sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "$SIGN_IN_PAGE" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
