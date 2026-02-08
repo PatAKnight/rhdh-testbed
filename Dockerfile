@@ -1,5 +1,5 @@
-# Stage 1: Get oc binary from official OpenShift image
-FROM registry.redhat.io/openshift4/ose-cli:latest AS oc-source
+# Stage 1: Get oc binary from OpenShift image
+FROM quay.io/openshift/origin-cli:latest AS oc-source
 
 # Stage 2: Main application image
 FROM --platform=linux/amd64 fedora:41
