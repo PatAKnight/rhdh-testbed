@@ -1,0 +1,3 @@
+*.sh
+Dockerfile
+node_modules/
