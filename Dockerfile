@@ -27,9 +27,9 @@ RUN chmod +x /app/start.sh /app/teardown.sh /app/scripts/*.sh
 RUN chown -R 1001:0 /app && chmod -R g=u /app
 
 # Create writable directories for helm and oc caches
-RUN mkdir -p /app/.cache /app/.config /app/.local/share/helm && \
-    chown -R 1001:0 /app/.cache /app/.config /app/.local && \
-    chmod -R g=u /app/.cache /app/.config /app/.local
+RUN mkdir -p /app/.cache /app/.config /app/.local/share/helm /app/auth/cluster-secrets && \
+    chown -R 1001:0 /app/.cache /app/.config /app/.local /app/auth && \
+    chmod -R g=u /app/.cache /app/.config /app/.local /app/auth
 
 # Set environment variables for helm and oc to use writable cache locations
 ENV HOME=/app \
