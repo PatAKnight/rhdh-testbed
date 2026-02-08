@@ -95,10 +95,10 @@ The sync runs weekly and can be triggered manually via workflow_dispatch
 
 ### File
 
-| File | Purpose |
-| ---- | ------\_ |
-| `resources/rhdh/dynamic-plugins.default.yaml` | Synced from upstream RHDH (do not edit) |
-| `resources/rhdh/dynamic-plugins-configmap.yaml` | Generated ConfigMap for deployment |
+| File                                            | Purpose                                 |
+| ----------------------------------------------- | --------------------------------------- |
+| `resources/rhdh/dynamic-plugins.default.yaml`   | Synced from upstream RHDH (do not edit) |
+| `resources/rhdh/dynamic-plugins-configmap.yaml` | Generated ConfigMap for deployment      |
 
 ### Regenerating the ConfigMap Locally
 
