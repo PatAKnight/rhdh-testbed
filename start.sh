@@ -148,7 +148,24 @@ deploy_resources() {
 apply_user_configs() {
   oc apply -f $PWD/resources/user-resources/rbac-policies.local.yaml --namespace=${NAMESPACE}
   oc apply -f $PWD/resources/user-resources/app-config-rhdh.local.yaml --namespace=${NAMESPACE}
-  oc apply -f $PWD/resources/user-resources/dynamic-plugins-configmap.local.yaml --namespace=${NAMESPACE}
+
+  # For dynamic plugins ConfigMap: 
+  # 1. Check if it exists in rhdh-testbed namespace (where Job runs)
+  # 2. Copy it to the target RHDH namespace
+  if [[ "${IN_CLUSTER:-false}" == "true" ]]; then
+    echo "Running in-cluster, checking for dynamic plugins ConfigMap in rhdh-testbed..."
+    if oc get configmap rhdh-dynamic-plugins -n rhdh-testbed &>/dev/null; then
+      echo "Found ConfigMap in rhdh-testbed, copying to ${NAMESPACE}..."
+      oc get configmap rhdh-dynamic-plugins -n rhdh-testbed -o yaml \
+        | sed "s/namespace: .*/namespace: ${NAMESPACE}/" \
+        | oc apply -f - --namespace=${NAMESPACE}
+    else
+      echo "No dynamic plugins ConfigMap found in rhdh-testbed, using defaults"
+    fi
+  else
+    # Running locally, apply from file
+    oc apply -f $PWD/resources/user-resources/dynamic-plugins-configmap.local.yaml --namespace=${NAMESPACE}
+  fi
 
   if [[ -n "$SIGN_IN_PAGE" ]]; then
     sed -i "s|SIGN_IN_PAGE:.*|SIGN_IN_PAGE: $(echo -n "$SIGN_IN_PAGE" | base64 -w 0)|g" $PWD/resources/user-resources/rhdh-secrets.local.yaml
