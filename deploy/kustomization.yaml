@@ -4,15 +4,16 @@ kind: Kustomization
 namespace: rhdh-testbed
 
 resources:
-  - serviceaccount.yaml
-  - clusterrole.yaml
-  - clusterrolebinding.yaml
+  - service-account.yaml
+  - cluster-role.yaml
+  - cluster-role-binding.yaml
   - configmap.yaml
   # Apply job.yaml separately after config is ready:
   # - job.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: rhdh-testbed
-  app.kubernetes.io/managed-by: kustomize
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: rhdh-testbed
+      app.kubernetes.io/managed-by: kustomize
 # To customize, create overlays or use:
 # kustomize edit set image ghcr.io/pataknight/rhdh-testbed:latest=ghcr.io/pataknight/rhdh-testbed:v1.0.0
