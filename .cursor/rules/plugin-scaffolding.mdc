@@ -40,6 +40,68 @@ API_KEY: "<PLACEHOLDER>"
 
 ---
 
+## IMPORTANT: Frontend vs Backend Plugins
+
+When scaffolding plugins, understand whether the plugin is frontend or backend, as this affects configuration:
+
+### Backend Plugins
+
+- Run on the RHDH backend server
+- Configured via `app-config.yaml` or environment variables
+- Example: `@backstage-community/plugin-3scale-backend`
+
+**Configuration Pattern:**
+
+```yaml
+# In app-config.yaml
+threeScaleApiEntity:
+  baseUrl: ${THREESCALE_BASE_URL}
+  accessToken: ${THREESCALE_ACCESS_TOKEN}
+```
+
+### Frontend Plugins
+
+- Run in the user's browser
+- Require **proxy configuration** in `dynamic-plugins-configmap.yaml`
+- Example: `@janus-idp/backstage-plugin-nexus-repository-manager`
+
+**Configuration Pattern:**
+
+```yaml
+# In dynamic-plugins-configmap.yaml
+- package: "@janus-idp/plugin-name"
+  pluginConfig:
+    dynamicPlugins:
+      frontend:
+        plugin.name:
+          mountPoints: [...]
+    proxy:
+      endpoints:
+        "/plugin-api-path":
+          target: "${SERVICE_URL}"
+          headers:
+            Authorization: "Basic ${AUTH_HEADER}"
+          changeOrigin: true
+          secure: true
+```
+
+**Why Frontend Plugins Need Proxies:**
+
+1. Browsers block cross-origin requests (CORS)
+2. Credentials should not be exposed to browser
+3. SSL certificate handling is centralized
+4. Backend can cache responses
+
+**When Scaffolding Frontend Plugins:**
+
+- ✅ Generate proxy configuration in plugin config section
+- ✅ Use `NEXUS_AUTH_HEADER` format (Base64 `username:password`)
+- ✅ Document the proxy requirement clearly
+- ✅ Note that secrets go in the proxy config, not app-config
+- ❌ Don't generate backend `app-config.yaml` sections
+
+---
+
 ## 1. Documentation (`docs/<plugin-name>.md`)
 
 Create documentation following the template at `docs/plugin-template.md`. Include:
