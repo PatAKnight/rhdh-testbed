@@ -28,14 +28,14 @@ Examples of what NOT to generate:
 
 ```yaml
 # BAD - actual values
-GITHUB_TOKEN: 'ghp_xxxxxxxxxxxxxxxxxxxx'
-API_KEY: 'sk-1234567890abcdef'
+GITHUB_TOKEN: "ghp_xxxxxxxxxxxxxxxxxxxx"
+API_KEY: "sk-1234567890abcdef"
 ```
 
 ```yaml
 # GOOD - placeholders only
-GITHUB_TOKEN: ''
-API_KEY: '<PLACEHOLDER>'
+GITHUB_TOKEN: ""
+API_KEY: "<PLACEHOLDER>"
 ```
 
 ---
@@ -225,6 +225,355 @@ spec:
 - Are suitable for demo/testing environments
 - Don't require external dependencies beyond the cluster
 
+### Demo Data and Test Resources (`resources/<plugin-name>/demo-data/`)
+
+**REQUIREMENT**: When adding a new plugin that deploys a service (repository manager, API gateway, etc.), you MUST include demo/test resources to populate the service with realistic data.
+
+#### Why Demo Data is Required
+
+- **Robust Demo Environment**: Users can immediately see the plugin working with real data
+- **Validation**: Ensures the integration is functional and properly configured
+- **Documentation**: Provides examples of what the plugin can display/manage
+- **User Experience**: Demonstrates the full capabilities of the plugin
+
+#### Guidelines for Demo Data
+
+1. **Self-Contained**: Demo data should not create hard dependencies on other plugins
+2. **Lightweight**: Keep test artifacts small and focused (a few examples, not comprehensive datasets)
+3. **Realistic**: Use examples that demonstrate typical use cases
+4. **Automated**: Demo data population should be automated via Jobs or init scripts
+5. **Catalog Entities Required**: MUST create catalog entities for demo artifacts so they appear in RHDH catalog with proper plugin annotations
+
+#### Implementation Approaches
+
+Choose the approach that best fits the plugin:
+
+**Option 1: Kubernetes Job with Init Script** (Recommended)
+
+Create a Job that runs after the service is ready and populates it with test data:
+
+```yaml
+# resources/<plugin-name>/populate-demo-data-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: <plugin>-populate-demo-data
+spec:
+  template:
+    spec:
+      containers:
+        - name: populate
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for service to be ready
+              until curl -f http://<service>:<port>/health; do
+                echo "Waiting for <service> to be ready..."
+                sleep 5
+              done
+
+              # Upload/create test data via API
+              curl -X POST http://<service>:<port>/api/...
+      restartPolicy: OnFailure
+```
+
+**Option 2: ConfigMap with Test Data**
+
+For small text-based artifacts (scripts, configs, sample files):
+
+```yaml
+# resources/<plugin-name>/demo-data-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <plugin>-demo-data
+data:
+  sample-script.sh: |
+    #!/bin/bash
+    echo "Sample script"
+  sample-config.yaml: |
+    key: value
+```
+
+**Option 3: Pre-built Artifacts in Repository**
+
+For binary files or larger artifacts:
+
+```
+resources/<plugin-name>/
+  demo-data/
+    README.md                          # Describes the demo data
+    sample-artifact-1.0.0.jar         # Example: Maven artifact
+    Dockerfile.demo                    # Example: Docker image source
+    upload-artifacts.sh               # Script to upload to the service
+```
+
+**Option 4: Fetch from External Sources**
+
+Download demo data from public repositories during setup:
+
+```bash
+# In deploy_<plugin>_resources() function
+echo "Downloading demo artifacts..."
+curl -L -o /tmp/demo-artifact.jar https://repo1.maven.org/maven2/...
+# Upload to service
+```
+
+#### Configuration Script Integration
+
+Update the configuration script to include demo data population and catalog entity registration:
+
+```bash
+populate_<plugin>_demo_data() {
+  # Check if demo data population is enabled
+  if [[ "${POPULATE_DEMO_DATA:-true}" == "false" ]]; then
+    echo "Demo data population disabled, skipping..."
+    return 0
+  fi
+
+  echo "Populating <plugin> with demo data..."
+
+  # Deploy the demo data job
+  oc apply -f $PWD/resources/<plugin>/populate-demo-data-job.yaml --namespace=${NAMESPACE}
+
+  # Wait for job to complete
+  oc wait --for=condition=complete --timeout=300s \
+    job/<plugin>-populate-demo-data -n ${NAMESPACE}
+}
+
+register_<plugin>_demo_catalog_entities() {
+  # Check if demo data population is enabled
+  if [[ "${POPULATE_DEMO_DATA:-true}" == "false" ]]; then
+    echo "Demo data disabled, skipping catalog entity registration..."
+    return 0
+  fi
+
+  echo "Registering <plugin> demo catalog entities..."
+
+  # Create ConfigMap for demo catalog entities
+  oc create configmap <plugin>-demo-entities-config-map \
+    --from-file=demo-<plugin>-artifacts.yaml=$PWD/resources/<plugin>/demo-catalog-entities.yaml \
+    --namespace=${NAMESPACE} \
+    --dry-run=client -o yaml | oc apply -f - --namespace=${NAMESPACE}
+
+  # Add label for Backstage to discover
+  oc label configmap <plugin>-demo-entities-config-map \
+    backstage.io/kubernetes-id=developer-hub \
+    --overwrite -n ${NAMESPACE}
+
+  echo "Demo catalog entities registered!"
+}
+
+# Add to CATEGORY_SETUP_FUNCTIONS
+[<CATEGORY_NAME>]="deploy_<plugin> deploy_<plugin>_resources config_secrets_for_<plugin>_plugins apply_<plugin>_labels populate_<plugin>_demo_data register_<plugin>_demo_catalog_entities"
+```
+
+#### Environment Variable Control
+
+Add to `.env.sample`:
+
+```bash
+# Demo Data Configuration
+POPULATE_DEMO_DATA=true # Set to false to skip demo data population
+```
+
+#### Examples by Plugin Type
+
+**Nexus Repository Manager:**
+
+- Maven artifacts (JARs with POM files)
+- npm packages
+- Catalog entities with proper annotations (`nexus-repository-manager/repository`, `maven.group-id`, `maven.artifact-id`, etc.)
+- Approach: Job using Nexus REST API + ConfigMap for catalog entities
+
+**3scale API Manager:**
+
+- Sample API definitions
+- Mock backends
+- API keys and rate limits
+- Catalog entities with 3scale annotations
+- Approach: 3scale CLI in Job
+
+**Quay Registry:**
+
+- Sample container images
+- Tags and labels
+- Catalog entities with image annotations
+- Approach: Podman push from Job
+
+**Tekton:**
+
+- Sample Pipelines
+- PipelineRuns with history
+- Catalog entities for pipeline resources
+- Approach: Apply sample YAML manifests
+
+**ArgoCD:**
+
+- Sample Application definitions
+- Git repositories (public examples)
+- Catalog entities for applications
+- Approach: ArgoCD CLI in Job
+
+#### Documentation Requirements
+
+In `docs/<plugin-name>.md`, add a "Demo Data" section that includes **both artifacts and catalog entities**:
+
+```markdown
+## Demo Data
+
+This plugin includes test resources to demonstrate functionality:
+
+### Demo Artifacts
+
+- **Sample Artifact 1**: Description and purpose
+- **Sample Artifact 2**: Description and purpose
+
+### Demo Catalog Entities
+
+The setup automatically registers demo components in the RHDH catalog:
+
+- **component-name-1** (Component) - Description
+  - Annotations: List the plugin-specific annotations used
+  - Purpose: Explain what this demonstrates
+- **component-name-2** (Component) - Description
+  - Annotations: List the plugin-specific annotations used
+  - Purpose: Explain what this demonstrates
+
+These catalog entities showcase how to use the plugin annotations in your own components.
+
+### Configuration
+
+Demo data is automatically populated during setup. To disable:
+
+\`\`\`bash
+export POPULATE_DEMO_DATA=false
+./scripts/config-<plugin>-plugin.sh
+\`\`\`
+
+To manually populate demo data after deployment:
+
+\`\`\`bash
+oc apply -f resources/<plugin>/populate-demo-data-job.yaml -n rhdh
+\`\`\`
+
+To manually register catalog entities:
+
+\`\`\`bash
+oc create configmap <plugin>-demo-entities-config-map \
+ --from-file=demo-<plugin>-artifacts.yaml=resources/<plugin>/demo-catalog-entities.yaml \
+ -n rhdh
+
+oc label configmap <plugin>-demo-entities-config-map \
+ backstage.io/kubernetes-id=developer-hub -n rhdh
+\`\`\`
+```
+
+#### Demo Catalog Entities File
+
+Create `resources/<plugin>/demo-catalog-entities.yaml` with proper plugin annotations:
+
+```yaml
+---
+# Demo Component for <Plugin Name>
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-component-name
+  title: Demo Component Display Name
+  description: Description of what this demonstrates
+  annotations:
+    # Plugin-specific annotations - CHECK PLUGIN DOCUMENTATION
+    # Example for Nexus Repository Manager:
+    nexus-repository-manager/repository: maven-releases
+    nexus-repository-manager/maven.group-id: com.example.demo
+    nexus-repository-manager/maven.artifact-id: demo-artifact
+    nexus-repository-manager/maven.base-version: 1.0.0
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: <plugin>-demo
+  tags:
+    - demo
+    - <plugin>
+  links:
+    - url: https://link-to-plugin-docs
+      title: Plugin Documentation
+      icon: docs
+spec:
+  type: library # or service, website, etc.
+  lifecycle: experimental
+  owner: group:default/guardians-of-the-galaxy # Use existing Keycloak team
+  dependencyOf:
+    - resource:default/<plugin>-resource
+---
+# Additional demo components can be owned by different teams
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-component-name-2
+  title: Another Demo Component
+  description: Another example demonstrating different team ownership
+  annotations:
+    # Plugin-specific annotations...
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/x-men # Different team for RBAC testing
+  dependencyOf:
+    - resource:default/<plugin>-resource
+```
+
+**CRITICAL NOTES**:
+
+1. **Always check the plugin's official documentation** for correct annotation names and formats. Annotations vary by plugin and wrong annotations will prevent the plugin from displaying data.
+
+2. **Use Existing Keycloak Teams for Ownership**: Instead of creating new Group entities, use the teams already defined in Keycloak. This enables proper RBAC testing where different users see different components.
+
+   **Available Keycloak Teams** (when Keycloak plugin is enabled):
+   - `group:default/avengers`
+   - `group:default/defenders`
+   - `group:default/fantastic-four`
+   - `group:default/guardians-of-the-galaxy`
+   - `group:default/x-men`
+   - `group:default/x-force`
+   - `group:default/cluster-admins`
+
+3. **Vary Team Ownership**: Assign different demo components to different teams. This allows users to test RBAC by logging in as different users and seeing only the components their team owns.
+
+   **Example Strategy**:
+   - First demo artifact → `group:default/guardians-of-the-galaxy`
+   - Second demo artifact → `group:default/x-men`
+   - Third demo artifact → `group:default/avengers`
+
+   This way, users from different teams will see different subsets of demo data when RBAC is enabled!
+
+4. **Random Assignment Suggestion**: When creating multiple demo components, vary team assignments to demonstrate RBAC capabilities.
+
+5. **DO NOT create custom Group/System entities** unless absolutely necessary for the plugin's functionality. Reuse existing Keycloak groups.
+
+#### Checklist for Demo Data
+
+When adding demo data for a plugin:
+
+- [ ] Determine appropriate demo data for the service type
+- [ ] Choose implementation approach (Job, ConfigMap, pre-built artifacts, or external fetch)
+- [ ] Create demo data resources in `resources/<plugin>/demo-data/` or `populate-demo-data-job.yaml`
+- [ ] **Create catalog entities file** `resources/<plugin>/demo-catalog-entities.yaml` with proper plugin annotations
+- [ ] **Use existing Keycloak teams** for component ownership (e.g., `group:default/guardians-of-the-galaxy`)
+- [ ] **Vary team ownership** across demo components to enable RBAC testing
+- [ ] Add `populate_<plugin>_demo_data()` function to config script
+- [ ] **Add `register_<plugin>_demo_catalog_entities()` function** to config script
+- [ ] Update `CATEGORY_SETUP_FUNCTIONS` to include demo data population AND catalog entity registration
+- [ ] Add `POPULATE_DEMO_DATA` environment variable support
+- [ ] Document demo data in `docs/<plugin-name>.md`
+- [ ] **Document catalog entities** in `docs/<plugin-name>.md` with annotation examples
+- [ ] Ensure demo data is self-contained (no cross-plugin dependencies)
+- [ ] Test demo data population in clean environment
+- [ ] **Verify catalog entities appear in RHDH catalog**
+- [ ] Verify plugin displays demo data correctly in RHDH UI with proper annotations
+
 ## 4. Update `config-plugins.sh`
 
 Add entries to three associative arrays:
@@ -247,7 +596,7 @@ declare -A PACKAGE_TO_CATEGORY=(
 declare -A CATEGORY_SETUP_FUNCTIONS=(
   # ... existing entries ...
 
-  [<CATEGORY_NAME>]="deploy_<plugin> deploy_<plugin>_resources config_secrets_for_<plugin>_plugins apply_<plugin>_labels"
+  [<CATEGORY_NAME>]="deploy_<plugin> deploy_<plugin>_resources config_secrets_for_<plugin>_plugins apply_<plugin>_labels populate_<plugin>_demo_data register_<plugin>_demo_catalog_entities"
 )
 ```
 
@@ -270,9 +619,9 @@ stringData:
   # ... existing entries ...
 
   # <Plugin Name>
-  <PLUGIN>_URL: ''
-  <PLUGIN>_TOKEN: ''
-  <PLUGIN>_SECRET: ''
+  <PLUGIN>_URL: ""
+  <PLUGIN>_TOKEN: ""
+  <PLUGIN>_SECRET: ""
 ```
 
 Also update `deploy/secret-template.yaml` with the same entries.
@@ -368,29 +717,47 @@ When scaffolding a new plugin, create/update these files:
 - [ ] `scripts/config-<plugin-name>-plugin.sh` - Configuration script
 - [ ] `resources/<plugin-name>/` - Resource manifests (if needed)
 - [ ] `resources/operators/<plugin>-subscription.yaml` - Operator subscription (if needed)
+- [ ] `resources/<plugin-name>/populate-demo-data-job.yaml` - Demo data population (REQUIRED for services)
+- [ ] **`resources/<plugin-name>/demo-catalog-entities.yaml`** - **Catalog entities for demo artifacts (REQUIRED)**
+- [ ] `resources/<plugin-name>/demo-data/` - Test artifacts/scripts (if applicable)
 - [ ] `config-plugins.sh` - Add to PACKAGE_TO_CATEGORY, CATEGORY_SETUP_FUNCTIONS, CATEGORY_TEARDOWN_FUNCTIONS
 - [ ] `resources/rhdh/rhdh-secrets.yaml` - Add secret placeholders
 - [ ] `deploy/secret-template.yaml` - Add secret placeholders
-- [ ] `.env.sample` - Add user-provided variables (if any)
+- [ ] `.env.sample` - Add user-provided variables and `POPULATE_DEMO_DATA` flag
 - [ ] Add operator entity to `operators.yaml`
 - [ ] Add CR entities to `operators.yaml` or `resources.yaml`
 - [ ] Ensure `backstage.io/kubernetes-id` matches labels in the config script
 - [ ] Define proper `dependsOn`/`dependencyOf` relationships
+- [ ] **Include demo catalog entities documentation in `docs/<plugin-name>.md`**
+- [ ] **Verify plugin annotations are correct** (check plugin's official documentation)
+- [ ] Add `populate_<plugin>_demo_data()` function to config script
+- [ ] **Add `register_<plugin>_demo_catalog_entities()` function** to config script
+- [ ] **Update CATEGORY_SETUP_FUNCTIONS to include both populate AND register functions**
+- [ ] Test demo data population in clean environment
+- [ ] **Test that catalog entities appear in RHDH catalog**
+- [ ] **Test that plugin UI displays data with correct annotations**
 
 ## Example: Adding Support for "Ansible" Plugin
 
 If asked to add Ansible plugin support:
 
-1. Create docs/ansible.md using template
-2. Create scripts/config-ansible-plugin.sh with deploy/config/teardown functions
-3. Create resources/ansible/ with AWX or AAP manifests (if available without license)
-4. Create resources/operators/ansible-subscription.yaml for the operator
-5. Update config-plugins.sh:
+1. Create `docs/ansible.md` using template
+2. Create `scripts/config-ansible-plugin.sh` with deploy/config/teardown functions
+3. Create `resources/ansible/` with AWX or AAP manifests (if available without license)
+4. Create `resources/operators/ansible-subscription.yaml` for the operator
+5. **Create demo data resources:**
+   - `resources/ansible/populate-demo-data-job.yaml` - Job to create sample playbooks/inventories
+   - **`resources/ansible/demo-catalog-entities.yaml` - Catalog entities with Ansible plugin annotations**
+   - Add `populate_ansible_demo_data()` function to script
+   - **Add `register_ansible_demo_catalog_entities()` function to script**
+6. Update `config-plugins.sh`:
 
    ```bash
-    ["plugin-ansible"]="ANSIBLE"
-    [ANSIBLE]="deploy_ansible deploy_ansible_resources config_secrets_for_ansible_plugins"
-    [ANSIBLE]="uninstall_ansible"
+   ["plugin-ansible"]="ANSIBLE"
+   [ANSIBLE]="deploy_ansible deploy_ansible_resources config_secrets_for_ansible_plugins apply_ansible_labels populate_ansible_demo_data register_ansible_demo_catalog_entities"
+   [ANSIBLE]="uninstall_ansible"
    ```
 
-6. Update secrets template with `ANSIBLE_URL`, `ANSIBLE_TOKEN`, etc.
+7. Update secrets template with `ANSIBLE_URL`, `ANSIBLE_TOKEN`, etc.
+8. **Document demo catalog entities in `docs/ansible.md` with correct annotations**
+9. **Verify annotations match Ansible plugin documentation**
