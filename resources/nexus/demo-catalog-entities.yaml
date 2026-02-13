@@ -1,0 +1,71 @@
+---
+# Demo Maven Component for Nexus Repository Manager Plugin
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: hello-world-lib
+  title: Hello World Library (Maven)
+  description: Demo Maven library showcasing Nexus Repository Manager integration with RHDH
+  annotations:
+    # Nexus Repository Manager plugin annotations
+    # See: https://github.com/backstage/community-plugins/blob/main/workspaces/nexus-repository-manager/plugins/nexus-repository-manager/ANNOTATIONS.md
+    nexus-repository-manager/repository: maven-releases
+    nexus-repository-manager/maven.group-id: com.example.demo
+    nexus-repository-manager/maven.artifact-id: hello-world-lib
+    nexus-repository-manager/maven.base-version: 1.0.0
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: nexus-demo-maven
+
+    # Source code location (example)
+    backstage.io/source-location: url:https://github.com/example/hello-world-lib
+  tags:
+    - java
+    - maven
+    - demo
+    - nexus
+  links:
+    - url: https://help.sonatype.com/repomanager3/formats/maven-repositories
+      title: Maven Repositories Documentation
+      icon: docs
+spec:
+  type: library
+  lifecycle: experimental
+  owner: group:default/guardians-of-the-galaxy
+  dependencyOf:
+    - resource:default/nexus-repo
+---
+# Demo npm Component for Nexus Repository Manager Plugin
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: hello-world-npm
+  title: Hello World Package (npm)
+  description: Demo npm package showcasing Nexus Repository Manager integration with RHDH
+  annotations:
+    # Nexus Repository Manager plugin annotations
+    # See: https://github.com/backstage/community-plugins/blob/main/workspaces/nexus-repository-manager/plugins/nexus-repository-manager/ANNOTATIONS.md
+    nexus-repository-manager/repository: npm-internal
+    nexus-repository-manager/name: "@demo/hello-world"
+    nexus-repository-manager/npm.scope: "@demo"
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: nexus-demo-npm
+
+    # Source code location (example)
+    backstage.io/source-location: url:https://github.com/example/hello-world-npm
+  tags:
+    - nodejs
+    - npm
+    - demo
+    - nexus
+  links:
+    - url: https://help.sonatype.com/repomanager3/formats/npm-registry
+      title: npm Registry Documentation
+      icon: docs
+spec:
+  type: library
+  lifecycle: experimental
+  owner: group:default/x-men
+  dependencyOf:
+    - resource:default/nexus-repo
