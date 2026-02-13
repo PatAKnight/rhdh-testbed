@@ -4,8 +4,29 @@ metadata:
   name: 3scale
 spec:
   system:
+    appSpec:
+      replicas: 1
+    sidekiqSpec:
+      replicas: 1
     fileStorage:
       simpleStorageService:
         configurationSecretRef:
           name: 3scale
   wildcardDomain: $ROUTER_BASE
+
+  # Reduce replicas to 1 for demo purposes
+  apicast:
+    productionSpec:
+      replicas: 1
+    stagingSpec:
+      replicas: 1
+  backend:
+    listenerSpec:
+      replicas: 1
+    workerSpec:
+      replicas: 1
+  zync:
+    appSpec:
+      replicas: 1
+    queSpec:
+      replicas: 1
