@@ -12,7 +12,7 @@ deploy_nexus() {
   oc apply -f $PWD/resources/operators/nexus-subscription.yaml --namespace=${NAMESPACE}
 }
 
-deploy_nexus_resources() {
+wait_for_nexus_operator_and_deploy_instance() {
   # Wait for operator to be ready
   echo "Waiting for Nexus operator to become ready..."
   SECONDS=0
@@ -33,10 +33,12 @@ deploy_nexus_resources() {
     sleep "$INTERVAL"
   done
 
-  # Deploy Nexus Repository Manager instance
+  # Deploy Nexus Repository Manager instance (immediately after operator is ready)
   echo "Deploying Nexus Repository Manager instance..."
   oc apply -f $PWD/resources/nexus/nexus-repo.yaml --namespace=${NAMESPACE}
+}
 
+wait_for_nexus_instance() {
   # Wait for Nexus instance to be ready
   echo "Waiting for Nexus instance to be ready..."
   SECONDS=0
@@ -232,7 +234,8 @@ main() {
   echo "=============================================="
 
   deploy_nexus
-  deploy_nexus_resources
+  wait_for_nexus_operator_and_deploy_instance
+  wait_for_nexus_instance
   config_secrets_for_nexus_plugins
   apply_nexus_labels
   populate_nexus_demo_data
