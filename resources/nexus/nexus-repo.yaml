@@ -1,0 +1,34 @@
+apiVersion: sonatype.com/v1alpha1
+kind: NexusRepo
+metadata:
+  name: nexus-repo
+  labels:
+    backstage.io/kubernetes-id: nexus-repo
+spec:
+  # Use OpenShift route for external access
+  useRedHatImage: true
+
+  # Expose via OpenShift route
+  networking:
+    expose: true
+    exposeAs: Route
+
+  # Nexus configuration
+  nexus:
+    # Use ephemeral storage for demo/test environments
+    # For production, configure persistent storage
+    volumeClaimTemplate:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+    # Default admin credentials will be generated
+    # Retrieve from nexus-admin-credentials secret
+    securityContext:
+      runAsUser: null

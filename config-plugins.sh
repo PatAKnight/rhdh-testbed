@@ -28,6 +28,9 @@ declare -A PACKAGE_TO_CATEGORY=(
   # 3scale - requires 3scale operator deployment
   ["plugin-3scale-backend"]="3SCALE"
 
+  # Nexus Repository Manager - requires Nexus operator deployment
+  ["plugin-nexus-repository-manager"]="NEXUS"
+
   #Kubernetes - needs ServiceAccount token setup
   ["plugin-kubernetes-backend"]="KUBERNETES"
   ["plugin-kubernetes"]="KUBERNETES"
@@ -43,6 +46,7 @@ declare -A CATEGORY_SETUP_FUNCTIONS=(
   [TEKTON]="deploy_tekon deploy_pipelines apply_tekton_labels"
   [OCM]="deploy_acm config_secrets_for_ocm_plugins deploy_multicluster_hub apply_ocm_labels"
   [3SCALE]="copy_3scale_files deploy_3scale deploy_minio deploy_3scale_resources"
+  [NEXUS]="deploy_nexus deploy_nexus_resources config_secrets_for_nexus_plugins apply_nexus_labels populate_nexus_demo_data register_nexus_demo_catalog_entities"
   [KUBERNETES]="config_secrets_for_kubernetes_plugins"
 )
 
@@ -51,6 +55,7 @@ declare -A CATEGORY_TEARDOWN_FUNCTIONS=(
   [TEKTON]="uninstall_tekton"
   [OCM]="uninstall_acm"
   [3SCALE]="uninstall_3scale"
+  [NEXUS]="uninstall_nexus"
   [KUBERNETES]=":"
 )
 

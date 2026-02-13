@@ -108,3 +108,41 @@ data:
       dependencyOf: component:default/backstage-plugin-tekton-workspace
       dependsOn: 
         - resource:default/test-cluster
+    ---
+    # Nexus Repository Manager Operator
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: nxrm-operator
+      title: Nexus Repository Manager Operator
+      description: Operator that is used to deploy and manage Sonatype Nexus Repository Manager instances
+      annotations:
+        backstage.io/kubernetes-id: nxrm-operator
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/janus-idp-nexus-repository-manager
+      dependsOn: 
+        - resource:default/test-cluster
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: nexus-repo
+      title: Nexus Repository Manager
+      description: Nexus Repository Manager instance for artifact management
+      annotations:
+        backstage.io/kubernetes-id: nexus-repo
+        backstage.io/kubernetes-namespace: rhdh
+      links:
+        - url: https://help.sonatype.com/repomanager3
+          title: Documentation
+          icon: web
+    spec:
+      type: artifact-repository
+      lifecycle: production
+      owner: cluster-admins
+      dependencyOf: component:default/janus-idp-nexus-repository-manager
+      dependsOn: 
+        - resource:default/nxrm-operator

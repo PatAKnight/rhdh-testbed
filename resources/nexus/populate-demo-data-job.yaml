@@ -1,0 +1,172 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nexus-populate-demo-data
+  labels:
+    backstage.io/kubernetes-id: nexus-repo
+spec:
+  template:
+    spec:
+      serviceAccountName: rhdh-testbed-job-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: populate-nexus
+          image: registry.access.redhat.com/ubi9/ubi:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              echo "Installing required tools..."
+              dnf install -y curl jq java-11-openjdk-devel maven nodejs npm
+
+              # Get Nexus URL and credentials
+              echo "Retrieving Nexus connection details..."
+              NEXUS_URL="http://nexus-repo-service:8081"
+              NEXUS_USER="admin"
+              NEXUS_PASS=$(cat /var/run/secrets/nexus-credentials/password 2>/dev/null)
+
+              if [ -z "$NEXUS_PASS" ]; then
+                echo "Error: Nexus admin credentials not found"
+                echo "The nexus-admin-credentials secret must exist"
+                exit 1
+              fi
+
+              # Wait for Nexus to be ready
+              echo "Waiting for Nexus to be ready..."
+              MAX_RETRIES=60
+              RETRY_COUNT=0
+
+              until curl -sf "${NEXUS_URL}/service/rest/v1/status" >/dev/null 2>&1; do
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+                  echo "Timeout waiting for Nexus to be ready"
+                  exit 1
+                fi
+                echo "Nexus not ready yet. Retrying in 5 seconds... (${RETRY_COUNT}/${MAX_RETRIES})"
+                sleep 5
+              done
+
+              echo "Nexus is ready!"
+
+              # Wait a bit more for repositories to be initialized
+              sleep 10
+
+              # Create demo Maven artifact
+              echo "Creating demo Maven artifact..."
+              mkdir -p /tmp/demo-maven
+              cd /tmp/demo-maven
+
+              cat > pom.xml << 'EOF'
+              <project xmlns="http://maven.apache.org/POM/4.0.0"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                                           http://maven.apache.org/xsd/maven-4.0.0.xsd">
+                <modelVersion>4.0.0</modelVersion>
+                <groupId>com.example.demo</groupId>
+                <artifactId>hello-world-lib</artifactId>
+                <version>1.0.0</version>
+                <packaging>jar</packaging>
+                <name>Hello World Demo Library</name>
+                <description>A demo library for RHDH Nexus integration</description>
+              </project>
+              EOF
+
+              mkdir -p src/main/java/com/example/demo
+              cat > src/main/java/com/example/demo/HelloWorld.java << 'EOF'
+              package com.example.demo;
+
+              public class HelloWorld {
+                  public static String getGreeting() {
+                      return "Hello from Nexus Repository Manager!";
+                  }
+              }
+              EOF
+
+              # Build the Maven artifact
+              mvn clean package -DskipTests
+
+              # Upload to Nexus using REST API (maven-releases repository)
+              echo "Uploading Maven artifact to Nexus..."
+              JAR_FILE="target/hello-world-lib-1.0.0.jar"
+              POM_FILE="pom.xml"
+
+              curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
+                --upload-file "${JAR_FILE}" \
+                "${NEXUS_URL}/repository/maven-releases/com/example/demo/hello-world-lib/1.0.0/hello-world-lib-1.0.0.jar"
+
+              curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
+                --upload-file "${POM_FILE}" \
+                "${NEXUS_URL}/repository/maven-releases/com/example/demo/hello-world-lib/1.0.0/hello-world-lib-1.0.0.pom"
+
+              # Create demo npm package
+              echo "Creating demo npm package..."
+              mkdir -p /tmp/demo-npm
+              cd /tmp/demo-npm
+
+              cat > package.json << 'EOF'
+              {
+                "name": "@demo/hello-world",
+                "version": "1.0.0",
+                "description": "A demo npm package for RHDH Nexus integration",
+                "main": "index.js",
+                "scripts": {
+                  "test": "echo \"No tests\" && exit 0"
+                },
+                "keywords": ["demo", "nexus", "rhdh"],
+                "author": "RHDH Demo",
+                "license": "Apache-2.0"
+              }
+              EOF
+
+              cat > index.js << 'EOF'
+              module.exports = {
+                greeting: function() {
+                  return "Hello from Nexus npm registry!";
+                }
+              };
+              EOF
+
+              cat > README.md << 'EOF'
+              # Demo npm Package
+
+              This is a demo package showcasing Nexus Repository Manager integration with RHDH.
+
+              ## Usage
+
+              ```javascript
+              const demo = require('@demo/hello-world');
+              console.log(demo.greeting());
+              ```
+              EOF
+
+              # Create tarball
+              npm pack
+
+              # Upload to Nexus npm repository
+              echo "Uploading npm package to Nexus..."
+              TARBALL=$(ls demo-hello-world-1.0.0.tgz)
+
+              curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" \
+                --upload-file "${TARBALL}" \
+                "${NEXUS_URL}/repository/npm-internal/"
+
+              echo "Demo data population completed successfully!"
+              echo ""
+              echo "Artifacts uploaded:"
+              echo "  - Maven: com.example.demo:hello-world-lib:1.0.0"
+              echo "  - npm: @demo/hello-world@1.0.0"
+              echo ""
+              echo "Access Nexus UI at: ${NEXUS_URL}"
+              echo "Username: ${NEXUS_USER}"
+
+          volumeMounts:
+            - name: nexus-credentials
+              mountPath: /var/run/secrets/nexus-credentials
+              readOnly: true
+      volumes:
+        - name: nexus-credentials
+          secret:
+            secretName: nexus-admin-credentials
+            optional: true
