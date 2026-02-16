@@ -153,6 +153,7 @@ create_users_and_groups_keycloak() {
   fi
 
   set -a
+  # shellcheck disable=SC2034
   USER_CREDENTIALS=$(tr -cd '[:alnum:]' </dev/urandom | fold -w 10 | head -1 | tr -d '\n')
   set +a
 

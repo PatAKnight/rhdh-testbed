@@ -46,6 +46,7 @@ deploy_minio() {
 
 deploy_3scale_resources() {
   set -a
+  # shellcheck disable=SC2034
   ROUTER_BASE=$(oc get ingress.config.openshift.io/cluster -o=jsonpath='{.spec.domain}')
   set +a
   
