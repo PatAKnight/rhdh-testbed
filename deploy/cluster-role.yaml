@@ -1,0 +1,137 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhdh-testbed-runner
+  labels:
+    app.kubernetes.io/name: rhdh-testbed
+    app.kubernetes.io/component: runner
+rules:
+  # =============================================================================
+  # CORE KUBERNETES RESOURCES (always exist)
+  # =============================================================================
+
+  # Namespace management
+  - apiGroups: ['']
+    resources: [namespaces]
+    verbs: [get, list, watch, create, update, patch]
+    # Note: 'delete' omitted - teardown uses 'oc delete project' instead
+
+  # Core resources needed for RHDH and demo workloads
+  - apiGroups: ['']
+    resources:
+      - pods
+      - pods/log
+      - services
+      - configmaps
+      - secrets
+      - serviceaccounts
+      - persistentvolumeclaims
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Workload resources
+  - apiGroups: [apps]
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Batch jobs (including demo CronJobs)
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # RBAC - needed to create ServiceAccounts and ClusterRoles for RHDH plugins
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources:
+      - clusterroles
+      - clusterrolebindings
+      - roles
+      - rolebindings
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Networking
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # =============================================================================
+  # OPENSHIFT-SPECIFIC RESOURCES (always exist on OpenShift)
+  # =============================================================================
+
+  # Routes for exposing RHDH and other services
+  - apiGroups: [route.openshift.io]
+    resources: [routes]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # ImageStreams for demo workloads
+  - apiGroups: [image.openshift.io]
+    resources: [imagestreams, imagestreamimports]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Project management
+  - apiGroups: [project.openshift.io]
+    resources: [projects, projectrequests]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Read cluster ingress config (to detect router base URL)
+  - apiGroups: [config.openshift.io]
+    resources: [ingresses]
+    verbs: [get, list]
+
+  # =============================================================================
+  # OPERATOR LIFECYCLE MANAGER (always exists on OpenShift)
+  # =============================================================================
+
+  # Install and manage operators
+  - apiGroups: [operators.coreos.com]
+    resources:
+      - subscriptions
+      - operatorgroups
+      - clusterserviceversions
+      - installplans
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # =============================================================================
+  # OPERATOR-INSTALLED CRDs (become active AFTER operators install)
+  # Using wildcards since operators may add resources in future versions
+  # =============================================================================
+
+  # Keycloak/RHSSO - installed by rhsso-operator
+  # Resources: Keycloak, KeycloakRealm, KeycloakClient, KeycloakUser, etc.
+  - apiGroups: [keycloak.org]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # Tekton - installed by openshift-pipelines-operator
+  # Resources: Pipeline, PipelineRun, Task, TaskRun, etc.
+  - apiGroups: [tekton.dev]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # OpenShift Pipelines operator config
+  # Resources: TektonConfig, TektonPipeline, etc.
+  - apiGroups: [operator.tekton.dev]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # ACM/OCM - installed by advanced-cluster-management operator
+  # Resources: ManagedCluster, MultiClusterHub, etc.
+  - apiGroups: [cluster.open-cluster-management.io]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  - apiGroups: [operator.open-cluster-management.io]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  - apiGroups: [multicluster.openshift.io]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # 3scale - installed by 3scale-operator
+  # Resources: APIManager, ActiveDoc, etc.
+  - apiGroups: [apps.3scale.net]
+    resources: ['*']
+    verbs: [get, list, watch, create, update, patch, delete]

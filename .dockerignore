@@ -1,0 +1,26 @@
+# Secrets and local configuration
+.env
+*.local.yaml
+auth/cluster-secrets/*.yaml
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Documentation 
+docs/
+
+# Temporary files
+*.tmp
+temp.txt
+
+# Deployment manifests (not needed inside the container)
+deploy/
+
+# GitHub files
+.github/
