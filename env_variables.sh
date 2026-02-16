@@ -11,7 +11,7 @@ set -a  # Automatically export all variables
 HELM_REPO_NAME=openshift-helm-charts
 HELM_REPO_URL=https://charts.openshift.io
 HELM_CHART_NAME=redhat-developer-hub
-HELM_CHART_VERSION=1.8.0
+HELM_CHART_VERSION=1.8.3
 OVERALL_RESULT=0
 
 RELEASE_NAME="backstage"
