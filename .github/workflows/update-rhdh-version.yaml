@@ -2,11 +2,11 @@ name: Update RHDH Version
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # Weekly on Monday at 9am UTC (after plugin sync)
+    - cron: "0 9 * * 1" # Weekly on Monday at 9am UTC (after plugin sync)
   workflow_dispatch:
     inputs:
       target_version:
-        description: 'Specific version to update to (leave empty for latest)'
+        description: "Specific version to update to (leave empty for latest)"
         required: false
 
 jobs:
@@ -67,7 +67,11 @@ jobs:
         if: steps.helm.outputs.needs_update == 'true'
         run: |
           # Update the active (uncommented) HELM_CHART_VERSION line
+          # Update env_variables.sh
           sed -i "s/^HELM_CHART_VERSION=.*/HELM_CHART_VERSION=${{ steps.helm.outputs.latest }}/" env_variables.sh
+
+          # Update deploy/configmap.yaml
+          sed -i "s/^  HELM_CHART_VERSION: .*/  HELM_CHART_VERSION: ${{ steps.helm.outputs.latest }}/" deploy/configmap.yaml
           echo "Updated HELM_CHART_VERSION from ${{ steps.helm.outputs.current }} to ${{ steps.helm.outputs.latest }}"
 
       - name: Sync dynamic plugins
@@ -116,8 +120,8 @@ jobs:
         if: steps.helm.outputs.needs_update == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: 'chore: update RHDH to version ${{ steps.helm.outputs.latest }}'
-          title: '[Auto] Update RHDH to ${{ steps.helm.outputs.latest }}'
+          commit-message: "chore: update RHDH to version ${{ steps.helm.outputs.latest }}"
+          title: "[Auto] Update RHDH to ${{ steps.helm.outputs.latest }}"
           body: |
             ## RHDH Version Update
 
