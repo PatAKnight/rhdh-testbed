@@ -31,6 +31,13 @@ declare -A PACKAGE_TO_CATEGORY=(
   # Nexus Repository Manager - requires Nexus operator deployment
   ["plugin-nexus-repository-manager"]="NEXUS"
 
+  # ArgoCD - requires ArgoCD operator deployment
+  # Supports 4 plugins (use both from same repository):
+  #   RoadieHQ: @roadiehq/backstage-plugin-argo-cd + @roadiehq/backstage-plugin-argo-cd-backend
+  #   Backstage Community: @backstage-community/plugin-argocd + @backstage-community/plugin-argocd-backend
+  ["plugin-argo-cd"]="ARGOCD"
+  ["plugin-argocd"]="ARGOCD"
+
   #Kubernetes - needs ServiceAccount token setup
   ["plugin-kubernetes-backend"]="KUBERNETES"
   ["plugin-kubernetes"]="KUBERNETES"
@@ -47,6 +54,7 @@ declare -A CATEGORY_SETUP_FUNCTIONS=(
   [OCM]="deploy_acm config_secrets_for_ocm_plugins deploy_multicluster_hub apply_ocm_labels"
   [3SCALE]="copy_3scale_files deploy_3scale deploy_minio deploy_3scale_resources"
   [NEXUS]="deploy_nexus wait_for_nexus_operator_and_deploy_instance wait_for_nexus_instance config_secrets_for_nexus_plugins apply_nexus_labels populate_nexus_demo_data register_nexus_demo_catalog_entities"
+  [ARGOCD]="deploy_argocd wait_for_argocd_operator_and_deploy_instance wait_for_argocd_instance_and_deploy_demo_applications config_secrets_for_argocd_plugins apply_argocd_labels register_argocd_demo_catalog_entities"
   [KUBERNETES]="config_secrets_for_kubernetes_plugins"
 )
 
@@ -56,6 +64,7 @@ declare -A CATEGORY_TEARDOWN_FUNCTIONS=(
   [OCM]="uninstall_acm"
   [3SCALE]="uninstall_3scale"
   [NEXUS]="uninstall_nexus"
+  [ARGOCD]="uninstall_argocd"
   [KUBERNETES]=":"
 )
 
