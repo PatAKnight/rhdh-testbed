@@ -19,6 +19,17 @@ Manually set up the plugin by:
 3. Mounting the kubeconfig or providing the necessary credentials.
 4. Updating the app-config.yaml to enable the plugin.
 
+**`K8S_CLUSTER_URL` resolution rules:**
+
+| `IN_CLUSTER`  | `K8S_CLUSTER_URL` in Secret | Behaviour                                                         |
+| ------------- | --------------------------- | ----------------------------------------------------------------- |
+| `false`/unset | set                         | Use the provided value                                            |
+| `false`/unset | **empty**                   | **Hard fail** — set it explicitly in your `.env` file             |
+| `true`        | set                         | Use the provided value (overrides auto-discovery)                 |
+| `true`        | **empty**                   | **Auto-discover** from the OpenShift Infrastructure CR (`oc get infrastructure cluster -o jsonpath='{.status.apiServerURL}'`) |
+
+When the setup Job runs with `IN_CLUSTER=true` and `K8S_CLUSTER_URL` is empty, the script queries the cluster's `Infrastructure` object to retrieve the real external API URL (e.g. `https://api.<cluster>:6443`) and writes it into `rhdh-secrets`. This API is accessible to any in-cluster ServiceAccount, so no additional RBAC is required.
+
 App config example:
 
 ```YAML
