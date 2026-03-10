@@ -43,6 +43,7 @@ Closes #(issue number)
 - [ ] `config-plugins.sh` updated with new mappings
 - [ ] Secret templates updated with new placeholders
 - [ ] Resource manifests added (if required)
+- [ ] Demo catalog entities added in `resources/<plugin-name>/demo-catalog-entities.yaml` (if plugin deploys a service)
 - [ ] All new scripts are executable (`chmod +x`)
 
 ## Testing Notes

@@ -102,6 +102,464 @@ threeScaleApiEntity:
 
 ---
 
+## IMPORTANT: Keep `app-config-rhdh.yaml` Lightweight — Use the Shared Dynamic Plugin Overrides ConfigMap
+
+The `resources/rhdh/app-config-rhdh.yaml` ConfigMap is the **core** RHDH
+app-config. It should stay as small as possible — only config that is always
+required goes here.
+
+Plugin-specific configuration (TechDocs publisher settings, backend URLs,
+etc.) belongs in the plugin's entry inside the shared `dynamic-plugins-overrides`
+ConfigMap. The `pluginConfig` block in each plugin entry is merged into the
+Backstage app-config by the `install-dynamic-plugins` init container at
+startup, so it is the natural place for plugin-specific app-config fragments.
+
+### The Pattern: Per-Key ConfigMap (mirrors `rbac-policies.yaml`)
+
+One ConfigMap named `dynamic-plugins-overrides` lives on the cluster. It has
+**one data key per plugin** — `dynamic-plugins-techdocs.yaml`,
+`dynamic-plugins-3scale.yaml`, etc. The ConfigMap is mounted as a directory at
+`/opt/app-root/src/plugin-overrides/`. Each file is a valid `plugins:` YAML
+list referenced individually in `global.dynamic.includes` inside `values.yaml`.
+
+This is identical to how `rbac-policy` works: the ConfigMap has multiple keys
+(`rbac-policy.csv`, `conditional-policy.yaml`), the volume mounts the whole
+ConfigMap as a directory, and RHDH reads each file independently. No merging
+logic, no Python, no patching of other files.
+
+### Why This Approach Is Future-Proof
+
+`dynamic-plugins.default.yaml` is deprecated. The replacement is OCI-image
+based plugin distribution via `global.dynamic.includes` with per-file overlays.
+The per-key ConfigMap pattern works identically with both the old
+`./dynamic-plugins/dist/` paths and new `oci://` references — no migration
+needed when the default file is eventually removed.
+
+### Pattern: Per-Plugin `dynamic-plugins-<plugin>.yaml` Source File
+
+**1. Create `resources/<plugin>/dynamic-plugins-<plugin>.yaml`:**
+
+This is a plain YAML file (not a ConfigMap) containing a `plugins:` list. The
+`pluginConfig` block is where plugin-specific app-config lives — **not** in
+`app-config-rhdh.yaml`.
+
+```yaml
+plugins:
+- package: ./dynamic-plugins/dist/<plugin-package>
+  disabled: false
+  pluginConfig:
+    <plugin>:
+      someKey: ${SOME_ENV_VAR}
+    dynamicPlugins:
+      frontend:
+        plugin.package-name:
+          mountPoints: [...]
+```
+
+**2. Add the key to the shared ConfigMap from the config script:**
+
+```bash
+# In config_secrets_for_<plugin>_plugins():
+
+# Add this plugin's key to the shared dynamic-plugins-overrides ConfigMap.
+# The --dry-run=client | oc apply idiom is idempotent and preserves any keys
+# already added by other plugin scripts.
+oc create configmap dynamic-plugins-overrides \
+  --from-file=dynamic-plugins-<plugin>.yaml="$PWD/resources/<plugin>/dynamic-plugins-<plugin>.yaml" \
+  --namespace="${NAMESPACE}" \
+  --dry-run=client -o yaml | oc apply -f - --namespace="${NAMESPACE}"
+```
+
+**3. Remove the key on teardown:**
+
+```bash
+# In uninstall_<plugin>():
+oc patch configmap dynamic-plugins-overrides \
+  --namespace="${NAMESPACE}" \
+  --type=json \
+  -p='[{"op":"remove","path":"/data/dynamic-plugins-<plugin>.yaml"}]' \
+  2>/dev/null || true
+```
+
+**4. Add the file path to `global.dynamic.includes` in `values.yaml`:**
+
+```yaml
+global:
+  dynamic:
+    includes:
+      - "dynamic-plugins.default.yaml"
+      - "plugin-overrides/dynamic-plugins-<plugin>.yaml"
+```
+
+### Debugging
+
+```bash
+# See all active plugin overrides in one place:
+oc get configmap dynamic-plugins-overrides -n rhdh -o yaml
+
+# See just one plugin's entries:
+oc get configmap dynamic-plugins-overrides -n rhdh \
+  -o jsonpath='{.data.dynamic-plugins-<plugin>\.yaml}'
+```
+
+### What Stays in `app-config-rhdh.yaml`
+
+Only configuration that is **always needed** regardless of which plugins are
+enabled:
+
+- `app.title`
+- `auth` providers and session secret
+- `backend.cache` (Redis)
+- `catalog` rules and static locations
+- `dynamicPlugins.rootDirectory`
+
+Everything else → `pluginConfig` block inside the plugin entry in
+`resources/<plugin>/dynamic-plugins-<plugin>.yaml`.
+
+### What Stays in `dynamic-plugins-configmap.yaml` (generated file)
+
+This generated file is the **safe fallback** — it reflects the upstream RHDH
+defaults with all optional plugins disabled. It should **never** contain
+plugin-specific secret references (e.g. `${TECHDOCS_S3_BUCKET_NAME}`) because:
+
+1. The file is auto-generated and will be overwritten on the next
+   `generate-configmap.sh` run.
+2. The env vars may not be present when a plugin is not enabled, causing
+   RHDH to fail at startup.
+
+Per-plugin configuration with env var references lives exclusively in
+`resources/<plugin>/dynamic-plugins-<plugin>.yaml` via the shared
+`dynamic-plugins-overrides` ConfigMap.
+
+---
+
+## IMPORTANT: Shared Infrastructure — Avoid Duplicate Deployments
+
+This repository runs on a shared OpenShift cluster with limited resources.
+**Never deploy a second copy of an infrastructure service that is already
+running.** Always check whether a shared instance exists before creating one.
+
+### The Problem
+
+Multiple plugins sometimes need the same backing service (e.g. MinIO for both
+3scale and TechDocs). Deploying it twice wastes CPU, memory, and PVC storage
+and can cause resource-starvation for other workloads on the cluster.
+
+### The Pattern: `ensure_X_deployed()` + `get_X_credentials()`
+
+Split infrastructure deployment into two helpers:
+
+```bash
+# Guard: deploy only if the resource is not already running
+ensure_minio_deployed() {
+  if oc get deployment minio --namespace="${NAMESPACE}" &>/dev/null; then
+    echo "MinIO already deployed — reusing existing instance."
+    return 0
+  fi
+  # ... actual deploy logic ...
+}
+
+# Reader: retrieve live credentials however they were created
+get_minio_credentials() {
+  MINIO_ROOT_USER=$(oc get secret minio -n "${NAMESPACE}" \
+    -o jsonpath='{.data.minio_root_user}' | base64 -d)
+  MINIO_ROOT_PASSWORD=$(oc get secret minio -n "${NAMESPACE}" \
+    -o jsonpath='{.data.minio_root_password}' | base64 -d)
+  export MINIO_ROOT_USER MINIO_ROOT_PASSWORD
+}
+```
+
+All plugins that need the service call `ensure_X_deployed()` (idempotent) and
+then `get_X_credentials()` — the first plugin to run deploys it, subsequent
+plugins reuse it automatically.
+
+### Teardown Must Mirror Deployment
+
+During teardown, **only remove shared infrastructure when no other plugin still
+needs it**. Use a probe (e.g. check for a sibling secret) to decide:
+
+```bash
+uninstall_techdocs() {
+  # Remove MinIO only when 3scale is not also using it
+  if ! oc get secret 3scale --namespace="${NAMESPACE}" &>/dev/null; then
+    oc delete deployment minio ...
+    oc delete persistentvolumeclaim minio ...
+  fi
+}
+```
+
+### Checklist for Shared Infrastructure
+
+When a new plugin needs an infrastructure service already used by another plugin:
+
+- [ ] Add an `ensure_X_deployed()` guard function (idempotent deploy)
+- [ ] Add a `get_X_credentials()` reader function (separate from deploy)
+- [ ] Call both from the plugin's config script
+- [ ] Write teardown to only remove the shared service when no other plugin
+      needs it (probe for sibling secrets / deployments)
+- [ ] Document the shared-instance behaviour in `docs/<plugin>.md`
+- [ ] **Do NOT create a second ImageStreamImport** for an image that is already
+      imported — reuse the existing `internal-<name>:<tag>` shortname
+
+### Existing Shared Services
+
+| Service | Deployment | Secret | Used By |
+|---------|------------|--------|---------|
+| MinIO   | `minio`    | `minio`| 3scale, TechDocs |
+
+---
+
+## IMPORTANT: Resource Efficiency — Only Deploy What Is Needed
+
+This cluster is used for demos and testing. Every unneeded Pod, PVC, or
+operator consumes resources that could starve other workloads. Follow these
+principles whenever adding or updating plugin support:
+
+### Principles
+
+1. **One instance per service** — use `ensure_X_deployed()` guards (see above).
+2. **Minimal replicas** — set `replicas: 1` for all demo workloads unless HA is
+   explicitly required.
+3. **Set resource requests and limits** on all containers so the scheduler can
+   bin-pack correctly and the cluster can enforce fairness:
+   ```yaml
+   resources:
+     requests:
+       cpu: 100m
+       memory: 256Mi
+     limits:
+       cpu: 500m
+       memory: 1Gi
+   ```
+   Adjust numbers to the realistic minimum for a demo workload.
+4. **Prefer operators over plain Deployments only when the operator is free**.
+   Operators themselves consume cluster resources; skip them for simple services
+   that work fine as plain Deployments (e.g. MinIO, Redis, SonarQube CE).
+5. **Use `imagePullPolicy: IfNotPresent` with ImageStreams** — avoids repeated
+   external pulls that hit rate limits and consume network bandwidth.
+6. **Skip demo data when `POPULATE_DEMO_DATA=false`** — every demo data Job
+   uses CPU/memory. Let users opt out.
+7. **Clean up Jobs after completion** — consider `ttlSecondsAfterFinished` on
+   Jobs so they don't accumulate:
+   ```yaml
+   spec:
+     ttlSecondsAfterFinished: 300
+   ```
+8. **Use `emptyDir` for ephemeral scratch space**, not PVCs, unless data must
+   survive pod restarts.
+
+### Anti-patterns to Avoid
+
+- ❌ Deploying the same service twice (e.g. two MinIO instances)
+- ❌ Leaving `resources:` blocks commented out (`# resources:`)
+- ❌ Using `replicas: 3` or `HorizontalPodAutoscaler` in demo resources
+- ❌ Pulling images from external registries without an ImageStream
+- ❌ Leaving Jobs / Pods running after they have completed
+- ❌ Creating a PVC when a `emptyDir` would suffice
+
+---
+
+## IMPORTANT: Round-Robin Execution Pattern
+
+This repository uses a **round-robin execution pattern** to parallelize plugin setup and minimize wait times. When multiple plugins are enabled, their setup steps are interleaved to maximize efficiency.
+
+### The Problem
+
+Sequential execution with blocking waits is slow:
+
+```
+NEXUS:  [Deploy Op] → [Wait 60s] → [Deploy Inst] → [Wait 90s] → [Config] (5 min)
+ARGOCD:                                                                    [Deploy Op] → [Wait 60s] (etc.)
+Total: 10+ minutes
+```
+
+### The Solution: Optimized Round-Robin
+
+Break setup into discrete steps and combine waits with dependent deployments:
+
+```
+Step 1: NEXUS  [Deploy Op]              → ARGOCD [Deploy Op]
+Step 2: NEXUS  [Wait 60s + Deploy Inst] → ARGOCD [Wait 60s + Deploy Inst]    (parallel!)
+Step 3: NEXUS  [Wait 90s]               → ARGOCD [Wait 90s + Deploy Apps]    (parallel!)
+Step 4: NEXUS  [Config]                 → ARGOCD [Config]
+Total: ~6 minutes (40% faster!)
+```
+
+### Best Practice: Combine Wait + Next Action
+
+**✅ GOOD - Combine waiting with dependent deployment:**
+
+```bash
+wait_for_<plugin>_operator_and_deploy_instance() {
+  # Wait for prerequisite
+  echo "Waiting for operator..."
+  while operator_not_ready; do sleep 5; done
+
+  # Immediately deploy dependent resource (no wasted time!)
+  echo "Deploying instance..."
+  oc apply -f instance.yaml
+}
+```
+
+**❌ BAD - Separate wait and deploy (wastes round-robin turns):**
+
+```bash
+wait_for_<plugin>_operator() {
+  # This function ONLY waits - wasted turn!
+  while operator_not_ready; do sleep 5; done
+}
+
+deploy_<plugin>_instance() {
+  # Quick action - should be combined with wait above
+  oc apply -f instance.yaml
+}
+```
+
+### Function Naming Convention
+
+Use descriptive names that show dependencies:
+
+- `wait_for_X_and_deploy_Y()` - Waits for X, then deploys Y (Y depends on X)
+- `wait_for_X()` - Pure wait (use only if nothing depends on X)
+- `config_secrets_for_X()` - Pure configuration (no dependencies)
+
+### Example: Well-Structured Plugin Script
+
+```bash
+#!/bin/bash
+
+# Step 1: Deploy operator (quick action)
+deploy_<plugin>() {
+  echo "Deploying operator..."
+  oc apply -f operator.yaml
+}
+
+# Step 2: Wait for operator + deploy instance (combined!)
+wait_for_<plugin>_operator_and_deploy_instance() {
+  echo "Waiting for operator..."
+  SECONDS=0
+  while true; do
+    STATUS=$(oc get csv | grep operator | awk '{print $NF}')
+    if [[ "$STATUS" == "Succeeded" ]]; then
+      break
+    fi
+    if [[ $SECONDS -ge $TIMEOUT ]]; then
+      exit 1
+    fi
+    sleep "$INTERVAL"
+  done
+
+  # Immediately deploy instance after operator is ready
+  echo "Deploying instance..."
+  oc apply -f instance.yaml
+}
+
+# Step 3: Wait for instance + deploy apps (combined!)
+wait_for_<plugin>_instance_and_deploy_apps() {
+  echo "Waiting for instance..."
+  SECONDS=0
+  while true; do
+    STATUS=$(oc get instance | grep ready)
+    if [[ -n "$STATUS" ]]; then
+      break
+    fi
+    if [[ $SECONDS -ge $TIMEOUT ]]; then
+      exit 1
+    fi
+    sleep "$INTERVAL"
+  done
+
+  # Immediately deploy apps after instance is ready
+  echo "Deploying demo applications..."
+  oc apply -f apps.yaml
+}
+
+# Step 4: Configuration (independent, no waiting)
+config_secrets_for_<plugin>_plugins() {
+  echo "Configuring secrets..."
+  # Extract credentials, update secrets
+}
+
+# Step 5: Labeling (independent, no waiting)
+apply_<plugin>_labels() {
+  echo "Applying labels..."
+  # Label resources
+}
+
+main() {
+  source "${PWD}/env_variables.sh"
+  source "${PWD}/.env"
+
+  deploy_<plugin>
+  wait_for_<plugin>_operator_and_deploy_instance
+  wait_for_<plugin>_instance_and_deploy_apps
+  config_secrets_for_<plugin>_plugins
+  apply_<plugin>_labels
+}
+```
+
+### Guidelines for New Plugins
+
+When scaffolding a new plugin:
+
+1. **Identify Dependencies**: What must wait for what?
+2. **Combine Wait + Deploy**: If B depends on A, combine waiting for A with deploying B
+3. **Keep Config Separate**: Don't combine waits with configuration that doesn't depend on the wait
+4. **Minimize Steps**: Fewer functions = fewer round-robin turns = faster execution
+
+### Decision Tree
+
+```
+Does step B depend on step A completing?
+│
+├─ YES: Can B be deployed immediately after A?
+│  │
+│  ├─ YES → Combine them! ✓
+│  │       wait_for_A_and_deploy_B()
+│  │
+│  └─ NO → Keep separate
+│         Example: wait_for_instance + config_secrets
+│                 (config doesn't depend on instance)
+│
+└─ NO → Keep separate
+        Example: apply_labels + deploy_apps
+                (apps don't depend on labels)
+```
+
+### Common Patterns
+
+```bash
+# Pattern 1: Operator → Instance
+wait_for_operator_and_deploy_instance() {
+  wait_for_operator
+  oc apply -f instance.yaml
+}
+
+# Pattern 2: Instance → Applications
+wait_for_instance_and_deploy_applications() {
+  wait_for_instance
+  oc apply -f applications.yaml
+}
+
+# Pattern 3: Instance → Demo Data Job
+wait_for_instance_and_populate_demo_data() {
+  wait_for_instance
+  oc apply -f demo-data-job.yaml
+}
+
+# Pattern 4: Pure wait (if nothing to deploy after)
+wait_for_final_resource() {
+  wait_for_resource
+  # Nothing to deploy after this
+}
+```
+
+### For More Details
+
+See `docs/ROUND_ROBIN_PATTERN.md` for comprehensive examples, timing comparisons, and testing recommendations.
+
+---
+
 ## 1. Documentation (`docs/<plugin-name>.md`)
 
 Create documentation following the template at `docs/plugin-template.md`. Include:
@@ -155,7 +613,7 @@ Requires the `<package-name>` to be enabled by setting `disabled: false`.
 
 ## 2. Configuration Script (`scripts/config-<plugin-name>-plugin.sh`)
 
-Create a script following this pattern
+Create a script following the **round-robin optimized pattern**:
 
 ```bash
 #!/bin/bash
@@ -164,21 +622,25 @@ Create a script following this pattern
 # <Plugin Name> Plugin Configuration
 # =============================================================================
 # This script deploys and configures resources required for the <plugin> plugin.
+# Functions are structured for efficient round-robin execution.
 # =============================================================================
 
+# Step 1: Deploy operator (quick action)
 deploy_<plugin>() {
-  # Deploy any operators or prerequisites
-  # Example: oc apply -f $PWD/resources/operators/<plugin>-subscription.yaml
   echo "Deploying <plugin> operator..."
+  oc apply -f $PWD/resources/operators/<plugin>-subscription.yaml --namespace=${NAMESPACE}
 }
 
-deploy_<plugin>_resources() {
+# Step 2: Wait for operator + deploy instance (combined for efficiency)
+wait_for_<plugin>_operator_and_deploy_instance() {
   # Wait for operator to be ready
+  echo "Waiting for <plugin> operator to become ready..."
   SECONDS=0
   while true; do
-    STATUS=$(oc get csv --namespace=${NAMESPACE} | grep <operator-name> | awk '{print $NF}')
+    STATUS=$(oc get csv --namespace=${NAMESPACE} 2>/dev/null | grep <operator-name> | awk '{print $NF}')
 
     if [[ "$STATUS" == "Succeeded" ]]; then
+      echo "<Plugin> operator is ready!"
       break
     fi
 
@@ -191,75 +653,227 @@ deploy_<plugin>_resources() {
     sleep "$INTERVAL"
   done
 
-  # Deploy plugin-specific resources
+  # Deploy instance immediately after operator is ready
+  echo "Deploying <plugin> instance..."
   oc apply -f $PWD/resources/<plugin>/<resource>.yaml --namespace=${NAMESPACE}
 }
 
-config_secrets_for_<plugin>_plugins() {
-  # Configure secrets in rhdh-secrets.local.yaml
-  # Extract values from deployed resources and update secrets
+# Step 3: Wait for instance + deploy dependent resources (combined if applicable)
+wait_for_<plugin>_instance_and_deploy_apps() {
+  # Wait for instance to be ready
+  echo "Waiting for <plugin> instance to be ready..."
+  SECONDS=0
+  while true; do
+    INSTANCE_STATUS=$(oc get <resource> <name> --namespace=${NAMESPACE} -o jsonpath='{.status.phase}' 2>/dev/null)
 
-  # Example:
-  # <PLUGIN>_URL=$(oc get route <plugin> --namespace=${NAMESPACE} -o jsonpath='{.spec.host}')
-  # sed -i "s|<PLUGIN>_URL:.*|<PLUGIN>_URL: $(echo -n "https://$<PLUGIN>_URL" | base64 -w 0)|g" \
-  #   $PWD/resources/user-resources/rhdh-secrets.local.yaml
+    if [[ "$INSTANCE_STATUS" == "Ready" ]] || [[ "$INSTANCE_STATUS" == "Available" ]]; then
+      echo "<Plugin> instance is ready!"
+      break
+    fi
+
+    if [[ $SECONDS -ge $TIMEOUT ]]; then
+      echo "Timeout waiting for <plugin> instance to become ready."
+      echo "Current status: ${INSTANCE_STATUS}"
+      exit 1
+    fi
+
+    echo "<Plugin> instance not ready yet (status: ${INSTANCE_STATUS}). Retrying in $INTERVAL seconds..."
+    sleep "$INTERVAL"
+  done
+
+  # Deploy dependent resources immediately after instance is ready (if any)
+  # Example: demo applications that require the instance to be running
+  echo "Deploying demo applications..."
+  oc apply -f $PWD/resources/<plugin>/demo-applications.yaml --namespace=${NAMESPACE}
 }
 
+# Step 4: Configure secrets (independent step, no waiting)
+config_secrets_for_<plugin>_plugins() {
+  echo "Configuring secrets for <plugin> plugins..."
+
+  # Extract values from deployed resources
+  <PLUGIN>_URL=$(oc get route <plugin> --namespace=${NAMESPACE} -o jsonpath='{.spec.host}' 2>/dev/null)
+
+  if [[ -z "$<PLUGIN>_URL" ]]; then
+    echo "Warning: Could not retrieve <plugin> URL from route."
+    <PLUGIN>_URL="<plugin>-service.${NAMESPACE}.svc.cluster.local"
+  fi
+
+  # Get credentials from secret
+  <PLUGIN>_PASSWORD=$(oc get secret <plugin>-credentials --namespace=${NAMESPACE} -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
+
+  if [ -z "$<PLUGIN>_PASSWORD" ]; then
+    echo "Error: <Plugin> credentials not found"
+    exit 1
+  fi
+
+  # Ensure local secrets file exists
+  if [ ! -f "$PWD/resources/user-resources/rhdh-secrets.local.yaml" ]; then
+    echo "Creating local secrets file..."
+    cp $PWD/resources/rhdh/rhdh-secrets.yaml $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  fi
+
+  # Update secrets file
+  echo "Updating RHDH secrets with <plugin> configuration..."
+
+  if grep -q "<PLUGIN>_URL:" $PWD/resources/user-resources/rhdh-secrets.local.yaml; then
+    sed -i "s|<PLUGIN>_URL:.*|<PLUGIN>_URL: $(echo -n "https://$<PLUGIN>_URL" | base64 -w 0)|g" \
+      $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  else
+    sed -i "/^data:/a\\  <PLUGIN>_URL: $(echo -n "https://$<PLUGIN>_URL" | base64 -w 0)" \
+      $PWD/resources/user-resources/rhdh-secrets.local.yaml
+  fi
+
+  echo "<Plugin> configuration completed!"
+}
+
+# Step 5: Apply labels (independent step, no waiting)
 apply_<plugin>_labels() {
-  # Apply backstage.io/kubernetes-id labels for topology view
+  echo "Applying Kubernetes labels for <plugin> resources..."
+
   declare -A patterns=(
-    ["<resource-pattern>"]="backstage.io/kubernetes-id=<plugin-name>"
+    ["<plugin>-pattern>"]="backstage.io/kubernetes-id=<plugin-name>"
   )
 
-  resource_types=("pods" "deployments" "replicasets" "services" "routes")
+  resource_types=("pods" "deployments" "replicasets" "services" "routes" "statefulsets")
 
   for resource in "${resource_types[@]}"; do
     for pattern in "${!patterns[@]}"; do
       label="${patterns[$pattern]}"
       oc get "$resource" -n $NAMESPACE --no-headers -o custom-columns=":metadata.name" 2>/dev/null \
         | grep "$pattern" \
-        | xargs -I {} oc label "$resource" {} "$label" --overwrite -n $NAMESPACE
+        | xargs -I {} oc label "$resource" {} "$label" --overwrite -n $NAMESPACE 2>/dev/null || true
     done
   done
+
+  echo "Labels applied successfully!"
 }
 
+# Optional: Populate demo data (if applicable)
+populate_<plugin>_demo_data() {
+  if [[ "${POPULATE_DEMO_DATA:-true}" == "false" ]]; then
+    echo "Demo data population disabled, skipping..."
+    return 0
+  fi
+
+  echo "Populating <plugin> with demo data..."
+  oc apply -f $PWD/resources/<plugin>/populate-demo-data-job.yaml --namespace=${NAMESPACE}
+
+  echo "Waiting for demo data population job to complete..."
+  oc wait --for=condition=complete --timeout=600s \
+    job/<plugin>-populate-demo-data -n ${NAMESPACE} 2>/dev/null || {
+      echo "Warning: Demo data population job did not complete successfully."
+      return 0
+    }
+
+  echo "Demo data population completed!"
+}
+
+# Optional: Register catalog entities (if applicable)
+register_<plugin>_demo_catalog_entities() {
+  if [[ "${POPULATE_DEMO_DATA:-true}" == "false" ]]; then
+    echo "Demo data disabled, skipping catalog entity registration..."
+    return 0
+  fi
+
+  echo "Registering <plugin> demo catalog entities..."
+
+  oc create configmap <plugin>-demo-entities-config-map \
+    --from-file=demo-<plugin>-entities.yaml=$PWD/resources/<plugin>/demo-catalog-entities.yaml \
+    --namespace=${NAMESPACE} \
+    --dry-run=client -o yaml | oc apply -f - --namespace=${NAMESPACE}
+
+  oc label configmap <plugin>-demo-entities-config-map \
+    backstage.io/kubernetes-id=developer-hub \
+    --overwrite -n ${NAMESPACE}
+
+  echo "Demo catalog entities registered!"
+}
+
+# Uninstall function for teardown
 uninstall_<plugin>() {
-  # Cleanup function for teardown
-  # Delete resources in reverse order
+  echo "Uninstalling <plugin>..."
 
-  # Delete plugin resources
-  oc delete -f $PWD/resources/<plugin>/<resource>.yaml --namespace=${NAMESPACE}
+  # Delete in reverse order
+  oc delete configmap <plugin>-demo-entities-config-map --namespace=${NAMESPACE} 2>/dev/null || true
+  oc delete job <plugin>-populate-demo-data --namespace=${NAMESPACE} 2>/dev/null || true
+  oc delete -f $PWD/resources/<plugin>/demo-applications.yaml --namespace=${NAMESPACE} 2>/dev/null || true
+  oc delete -f $PWD/resources/<plugin>/<resource>.yaml --namespace=${NAMESPACE} 2>/dev/null || true
 
-  # Uninstall the operator
-  OPERATOR=$(oc get csv --namespace=${NAMESPACE} | grep <operator-name> | awk '{print $1}')
-  oc delete clusterserviceversion $OPERATOR --namespace=${NAMESPACE}
-  oc delete sub <operator>-subscription --namespace=${NAMESPACE}
+  sleep 10
+
+  OPERATOR=$(oc get csv --namespace=${NAMESPACE} 2>/dev/null | grep <operator-name> | awk '{print $1}')
+  if [[ -n "$OPERATOR" ]]; then
+    oc delete clusterserviceversion $OPERATOR --namespace=${NAMESPACE}
+  fi
+  oc delete subscription <plugin>-operator-subscription --namespace=${NAMESPACE} 2>/dev/null || true
+
+  echo "<Plugin> uninstalled!"
 }
 
+# Main function for standalone execution
 main() {
   source "${PWD}/env_variables.sh"
   source "${PWD}/.env"
 
-  echo "Configuring resources for <Plugin> plugin"
+  echo "=============================================="
+  echo "Configuring <Plugin Name> Plugin"
+  echo "=============================================="
 
+  # Execute steps in order - round-robin will interleave with other plugins
   deploy_<plugin>
-  deploy_<plugin>_resources
+  wait_for_<plugin>_operator_and_deploy_instance
+  wait_for_<plugin>_instance_and_deploy_apps
   config_secrets_for_<plugin>_plugins
   apply_<plugin>_labels
+  populate_<plugin>_demo_data          # Optional
+  register_<plugin>_demo_catalog_entities  # Optional
+
+  echo ""
+  echo "=============================================="
+  echo "<Plugin Name> configuration complete!"
+  echo "=============================================="
 
   exit "${OVERALL_RESULT}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  main
+    main
 fi
 ```
 
+### Key Points for Script Structure
+
+1. **Function Names Must Match Pattern**: Use `wait_for_X_and_deploy_Y` naming
+2. **Combine Dependencies**: Wait + deploy should be in same function when Y depends on X
+3. **Order Matters**: List functions in `main()` in dependency order
+4. **Keep Config Separate**: Don't combine waits with pure configuration steps
+5. **Optional Steps**: Demo data and catalog entities are optional but recommended
+
 ## 3. Resource Files (`resources/<plugin-name>/`)
 
-Create resource manifests if the plugin requires additional cluster services:
+Create resource manifests if the plugin requires additional cluster services.
 
-### Operator Subscription (`resources/operators/<plugin>-subscription.yaml`)
+### Choosing a Deployment Strategy
+
+Not every plugin requires an OpenShift operator. Choose the strategy that best fits the service:
+
+| Strategy | When to use | Examples in this repo |
+|---|---|---|
+| **OLM Operator** | Service has a supported Red Hat or community operator in OperatorHub | Nexus (NXRM), ArgoCD, Keycloak (RHSSO), ACM |
+| **Helm chart** | Service has a maintained Helm chart but no operator; or the operator requires a commercial license | Could apply to Vault, Grafana, etc. |
+| **Plain Deployment** | Open-source service with no operator; simple stateless or single-pod workload | SonarQube CE, Redis, MinIO |
+
+**Decision guidance:**
+
+1. Check OperatorHub first — if a free/community operator exists, prefer it.
+2. If no operator is available but a Helm chart exists and is well-maintained, use Helm.
+3. Otherwise create a plain `Deployment` + `Service` + `Route` (+ `PVC` if persistence is needed).
+
+There is no requirement that plugins use operators. Plain deployments are a first-class option and
+are often simpler to maintain in a demo/test context.
+
+### Operator-based deployment (`resources/operators/<plugin>-subscription.yaml`)
 
 ```yaml
 apiVersion: operators.coreos.com/v1alpha1
@@ -274,12 +888,205 @@ spec:
   sourceNamespace: openshift-marketplace
 ```
 
+### Helm-based deployment
+
+Add install/upgrade logic inside `deploy_<plugin>()` in the config script:
+
+```bash
+deploy_<plugin>() {
+  echo "Deploying <plugin> via Helm..."
+  helm repo add <repo-name> <repo-url>
+  helm repo update
+  helm upgrade --install <release-name> <repo-name>/<chart-name> \
+    --namespace "${NAMESPACE}" \
+    --set key=value \
+    --wait
+}
+```
+
+No separate resource YAML is needed for pure Helm deployments.
+
+### Plain Deployment (`resources/<plugin-name>/<plugin>-deployment.yaml`)
+
+Use standard Kubernetes resources for services that do not have an operator or Helm chart:
+
+```yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim   # omit if no persistence needed
+metadata:
+  name: <plugin>-data
+  labels:
+    backstage.io/kubernetes-id: <plugin>-instance
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <plugin>
+  labels:
+    app: <plugin>
+    backstage.io/kubernetes-id: <plugin>-instance
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <plugin>
+  template:
+    metadata:
+      labels:
+        app: <plugin>
+        backstage.io/kubernetes-id: <plugin>-instance
+    spec:
+      containers:
+        - name: <plugin>
+          image: <image-reference>   # see ImageStream section below
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: <port>
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { cpu: 1000m, memory: 2Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: <plugin>
+  labels:
+    backstage.io/kubernetes-id: <plugin>-instance
+spec:
+  selector:
+    app: <plugin>
+  ports:
+    - port: <port>
+      targetPort: <port>
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: <plugin>
+  labels:
+    backstage.io/kubernetes-id: <plugin>-instance
+spec:
+  to:
+    kind: Service
+    name: <plugin>
+  port:
+    targetPort: <port>
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+```
+
+---
+
+### IMPORTANT: Use ImageStreams to Avoid Registry Rate Limiting
+
+OpenShift clusters can hit **Docker Hub and other registry rate limits** when the same image is
+pulled repeatedly across script runs on the same cluster (e.g., during development, testing, or
+re-deployment). This is especially common with `docker.io` images.
+
+This repository solves this by pre-importing images into the OpenShift internal registry using
+`ImageStreamImport` resources. Once imported, pods reference the internal copy instead of pulling
+from the external registry every time.
+
+#### How it works
+
+1. `resources/image-stream-imports/<image>-import.yaml` defines the import
+2. `start.sh` applies all imports upfront via `deploy_image_stream_imports()`
+3. Deployments reference the internal image using the `internal-<name>:<tag>` shortname
+   (resolved by the ImageStream's `lookupPolicy.local: true`)
+
+#### ImageStreamImport template
+
+Create `resources/image-stream-imports/<plugin>-import.yaml`:
+
+```yaml
+apiVersion: image.openshift.io/v1
+kind: ImageStreamImport
+metadata:
+  name: internal-<plugin>
+spec:
+  import: true
+  images:
+    - from:
+        kind: DockerImage
+        name: <registry>/<image>:<tag>   # e.g. docker.io/sonarqube:community
+      to:
+        name: <tag>                      # e.g. community
+      importPolicy:
+        insecure: false
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: internal-<plugin>
+spec:
+  lookupPolicy:
+    local: true   # allows pods to use 'internal-<plugin>:<tag>' as image name
+```
+
+#### Reference the internal image in Deployments
+
+Once the ImageStream is imported, use the short name in your pod spec — **not** the full external
+registry URL:
+
+```yaml
+containers:
+  - name: <plugin>
+    image: internal-<plugin>:<tag>   # e.g. internal-sonarqube:community
+    imagePullPolicy: IfNotPresent    # REQUIRED — use local copy, skip remote pull
+```
+
+The `IfNotPresent` pull policy is important. Combined with `lookupPolicy.local: true`, OpenShift
+resolves the short name to the internal registry and skips the external pull entirely.
+
+#### Apply the import in `start.sh`
+
+Add your new import to the `deploy_image_stream_imports()` function in `start.sh`:
+
+```bash
+deploy_image_stream_imports() {
+  # ... existing imports ...
+  oc apply -f $PWD/resources/image-stream-imports/<plugin>-import.yaml --namespace=${NAMESPACE}
+}
+```
+
+#### When to create an ImageStreamImport
+
+- **Always** when using a `docker.io` image in a Deployment, StatefulSet, Job, or CronJob
+- **Always** for images from registries that enforce rate limits (Docker Hub, GitHub Container Registry with unauthenticated pulls, etc.)
+- **Not needed** for images already in the OpenShift internal registry or `registry.access.redhat.com` / `registry.redhat.io` (Red Hat registry uses pull secrets and is not rate-limited the same way)
+- **Not needed** for OLM operators (the operator catalog handles image pulls separately)
+
+#### Existing ImageStream imports in this repo
+
+| File | Image | Short name |
+|---|---|---|
+| `alpine-import.yaml` | `alpine:latest` | `internal-alpine:latest` |
+| `busy-box-import.yaml` | `busybox:latest` | `internal-busy-box:latest` |
+| `nginxdemos-import.yaml` | `nginxdemos/hello:plain-text` | `internal-nginxdemos-hello:plain-text` |
+| `perl-import.yaml` | `perl:5.34.0` | `internal-perl:5.34.0` |
+| `redis-import.yaml` | `redis:6.2` | `internal-redis:6.2` |
+| `ubuntu-import.yaml` | `ubuntu:latest` | `internal-ubuntu:latest` |
+| `minio.yaml` | `quay.io/minio/minio:latest` | `internal-minio:latest` |
+
+If the image you need is already imported, use the existing short name and do not create a
+duplicate import.
+
+---
+
 ### Plugin-specific Resources (`resources/<plugin-name>/`)
 
-- Custom resources for the operator
+- Custom resources for the operator (operator strategy)
+- Helm values overrides (Helm strategy)
+- `Deployment`, `Service`, `Route`, `PVC` (plain deployment strategy)
 - ConfigMaps
-- Secrets (**templates with placeholders only** - never include actual credentials)
-- Services, Deployments if needed
+- Secrets (**templates with placeholders only** — never include actual credentials)
 
 **Important**: Only include resources for services that:
 
@@ -654,13 +1461,28 @@ declare -A PACKAGE_TO_CATEGORY=(
 
 ### CATEGORY_SETUP_FUNCTIONS
 
+**IMPORTANT**: Use the round-robin optimized pattern with combined wait+deploy functions.
+
 ```bash
 declare -A CATEGORY_SETUP_FUNCTIONS=(
   # ... existing entries ...
 
-  [<CATEGORY_NAME>]="deploy_<plugin> deploy_<plugin>_resources config_secrets_for_<plugin>_plugins apply_<plugin>_labels populate_<plugin>_demo_data register_<plugin>_demo_catalog_entities"
+  # Use combined wait+deploy functions for efficiency
+  [<CATEGORY_NAME>]="deploy_<plugin> wait_for_<plugin>_operator_and_deploy_instance wait_for_<plugin>_instance_and_deploy_apps config_secrets_for_<plugin>_plugins apply_<plugin>_labels populate_<plugin>_demo_data register_<plugin>_demo_catalog_entities"
 )
 ```
+
+**Pattern Explanation:**
+
+- `deploy_<plugin>` - Deploys the operator (quick)
+- `wait_for_<plugin>_operator_and_deploy_instance` - Waits for operator + deploys instance (combined!)
+- `wait_for_<plugin>_instance_and_deploy_apps` - Waits for instance + deploys apps (combined!)
+- `config_secrets_for_<plugin>_plugins` - Configures secrets (independent)
+- `apply_<plugin>_labels` - Applies labels (independent)
+- `populate_<plugin>_demo_data` - Populates demo data (optional)
+- `register_<plugin>_demo_catalog_entities` - Registers catalog entities (optional)
+
+**Note:** Combine wait operations with dependent deployments. Don't list separate `wait_for_X` and `deploy_Y` functions.
 
 ### CATEGORY_TEARDOWN_FUNCTIONS
 
@@ -776,18 +1598,31 @@ spec:
 When scaffolding a new plugin, create/update these files:
 
 - [ ] `docs/<plugin-name>.md` - Documentation
-- [ ] `scripts/config-<plugin-name>-plugin.sh` - Configuration script
-- [ ] `resources/<plugin-name>/` - Resource manifests (if needed)
-- [ ] `resources/operators/<plugin>-subscription.yaml` - Operator subscription (if needed)
+- [ ] `scripts/config-<plugin-name>-plugin.sh` - **Configuration script with round-robin optimized functions**
+  - [ ] Use `wait_for_X_and_deploy_Y` naming pattern for combined functions
+  - [ ] Combine wait operations with dependent deployments
+  - [ ] Keep configuration steps separate from wait operations
+  - [ ] List functions in dependency order in `main()`
+- [ ] **Choose a deployment strategy** (operator, Helm, or plain Deployment) and create the appropriate resource files:
+  - [ ] **Operator**: `resources/operators/<plugin>-subscription.yaml` + CR in `resources/<plugin-name>/`
+  - [ ] **Helm**: add `helm upgrade --install` logic to `deploy_<plugin>()` in the config script
+  - [ ] **Plain Deployment**: `resources/<plugin-name>/<plugin>-deployment.yaml` (Deployment + Service + Route + PVC if needed)
+- [ ] **ImageStreamImport** — if the Deployment/Job uses a `docker.io` or rate-limited image:
+  - [ ] Create `resources/image-stream-imports/<plugin>-import.yaml` with `ImageStreamImport` + `ImageStream`
+  - [ ] Reference the image as `internal-<plugin>:<tag>` with `imagePullPolicy: IfNotPresent` in all pod specs
+  - [ ] Add `oc apply -f $PWD/resources/image-stream-imports/<plugin>-import.yaml` to `deploy_image_stream_imports()` in `start.sh`
+  - [ ] Check existing imports first — reuse `internal-alpine`, `internal-redis`, etc. if already available
 - [ ] `resources/<plugin-name>/populate-demo-data-job.yaml` - Demo data population (REQUIRED for services)
+  - [ ] Job image should use an internal ImageStream reference if sourced from a rate-limited registry
 - [ ] **`resources/<plugin-name>/demo-catalog-entities.yaml`** - **Catalog entities for demo artifacts (REQUIRED)**
 - [ ] `resources/<plugin-name>/demo-data/` - Test artifacts/scripts (if applicable)
 - [ ] `config-plugins.sh` - Add to PACKAGE_TO_CATEGORY, CATEGORY_SETUP_FUNCTIONS, CATEGORY_TEARDOWN_FUNCTIONS
+  - [ ] **Use combined function names in CATEGORY_SETUP_FUNCTIONS** (e.g., `wait_for_operator_and_deploy_instance`)
+  - [ ] Verify function order matches dependencies
 - [ ] `resources/rhdh/rhdh-secrets.yaml` - Add secret placeholders
 - [ ] `deploy/secret-template.yaml` - Add secret placeholders
 - [ ] `.env.sample` - Add user-provided variables and `POPULATE_DEMO_DATA` flag
-- [ ] Add operator entity to `operators.yaml`
-- [ ] Add CR entities to `operators.yaml` or `resources.yaml`
+- [ ] Add service/operator/CR entity to `operators.yaml` or `resources.yaml`
 - [ ] Ensure `backstage.io/kubernetes-id` matches labels in the config script
 - [ ] Define proper `dependsOn`/`dependencyOf` relationships
 - [ ] **Include demo catalog entities documentation in `docs/<plugin-name>.md`**
@@ -795,31 +1630,46 @@ When scaffolding a new plugin, create/update these files:
 - [ ] Add `populate_<plugin>_demo_data()` function to config script
 - [ ] **Add `register_<plugin>_demo_catalog_entities()` function** to config script
 - [ ] **Update CATEGORY_SETUP_FUNCTIONS to include both populate AND register functions**
+- [ ] **Verify round-robin efficiency**: Each function should be productive (no idle waiting)
 - [ ] Test demo data population in clean environment
 - [ ] **Test that catalog entities appear in RHDH catalog**
 - [ ] **Test that plugin UI displays data with correct annotations**
+- [ ] **Test with another plugin enabled to verify round-robin interleaving works correctly**
 
 ## Example: Adding Support for "Ansible" Plugin
 
 If asked to add Ansible plugin support:
 
 1. Create `docs/ansible.md` using template
-2. Create `scripts/config-ansible-plugin.sh` with deploy/config/teardown functions
-3. Create `resources/ansible/` with AWX or AAP manifests (if available without license)
-4. Create `resources/operators/ansible-subscription.yaml` for the operator
-5. **Create demo data resources:**
+2. **Choose deployment strategy**: Ansible Automation Platform has an operator on OperatorHub → use operator strategy
+3. Create `scripts/config-ansible-plugin.sh` with **round-robin optimized functions**:
+   - `deploy_ansible()` - Deploy operator
+   - `wait_for_ansible_operator_and_deploy_instance()` - Combined wait + deploy
+   - `wait_for_ansible_instance_and_populate_demo_data()` - Combined wait + demo data
+   - `config_secrets_for_ansible_plugins()` - Configure secrets
+   - `apply_ansible_labels()` - Apply labels
+   - `register_ansible_demo_catalog_entities()` - Register catalog entities
+4. Create `resources/ansible/` with AWX or AAP manifests (if available without license)
+5. Create `resources/operators/ansible-subscription.yaml` for the operator
+6. **Create demo data resources:**
    - `resources/ansible/populate-demo-data-job.yaml` - Job to create sample playbooks/inventories
+     - If this Job uses a `docker.io` image, create an ImageStreamImport for it and reference `internal-<name>:<tag>`
    - **`resources/ansible/demo-catalog-entities.yaml` - Catalog entities with Ansible plugin annotations**
-   - Add `populate_ansible_demo_data()` function to script
-   - **Add `register_ansible_demo_catalog_entities()` function to script**
-6. Update `config-plugins.sh`:
+7. Update `config-plugins.sh` with **combined functions**:
 
    ```bash
+   # PACKAGE_TO_CATEGORY
    ["plugin-ansible"]="ANSIBLE"
-   [ANSIBLE]="deploy_ansible deploy_ansible_resources config_secrets_for_ansible_plugins apply_ansible_labels populate_ansible_demo_data register_ansible_demo_catalog_entities"
+
+   # CATEGORY_SETUP_FUNCTIONS - Use combined wait+deploy functions!
+   [ANSIBLE]="deploy_ansible wait_for_ansible_operator_and_deploy_instance wait_for_ansible_instance_and_populate_demo_data config_secrets_for_ansible_plugins apply_ansible_labels register_ansible_demo_catalog_entities"
+
+   # CATEGORY_TEARDOWN_FUNCTIONS
    [ANSIBLE]="uninstall_ansible"
    ```
 
-7. Update secrets template with `ANSIBLE_URL`, `ANSIBLE_TOKEN`, etc.
-8. **Document demo catalog entities in `docs/ansible.md` with correct annotations**
-9. **Verify annotations match Ansible plugin documentation**
+8. Update secrets template with `ANSIBLE_URL`, `ANSIBLE_TOKEN`, etc.
+9. **Document demo catalog entities in `docs/ansible.md` with correct annotations**
+10. **Verify annotations match Ansible plugin documentation**
+
+**Note:** The example above uses 6 functions (down from 8+) by combining wait operations with dependent deployments. This ensures efficient round-robin execution with minimal idle time.
