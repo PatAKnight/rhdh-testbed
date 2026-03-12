@@ -5,7 +5,7 @@ set -a  # Automatically export all variables
 HELM_REPO_NAME=rhdh-chart
 HELM_REPO_URL=https://redhat-developer.github.io/rhdh-chart/
 HELM_CHART_NAME=backstage
-HELM_CHART_VERSION=5.2.0  # community version numbering
+HELM_CHART_VERSION=5.4.0
 
 # Use this for the upstream Red Hat Developer Hub chart
 # HELM_REPO_NAME=openshift-helm-charts
