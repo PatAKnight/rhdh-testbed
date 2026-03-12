@@ -16,6 +16,8 @@ guides/
 ├── README.md                          # This file
 ├── nexus-troubleshooting.md          # Nexus plugin troubleshooting
 ├── nexus-advanced-config.md          # Nexus production setup
+├── argocd-troubleshooting.md         # ArgoCD plugin troubleshooting
+├── argocd-advanced-config.md         # ArgoCD production setup
 └── [future guides]
 ```
 
@@ -39,6 +41,27 @@ guides/
   - Backup and restore procedures
   - Monitoring and metrics
   - Performance optimization
+
+### ArgoCD
+
+- **[Troubleshooting Guide](argocd-troubleshooting.md)** - Diagnose and fix common issues
+  - Operator installation problems
+  - ArgoCD instance startup issues
+  - Application sync failures
+  - Plugin integration problems (RoadieHQ vs Backstage Community)
+  - Authentication and RBAC issues
+  - Network connectivity
+  - Performance issues
+- **[Advanced Configuration](argocd-advanced-config.md)** - Production-ready setups
+  - High availability configuration
+  - Resource tuning and sharding
+  - Multiple ArgoCD instance support
+  - Security configuration (RBAC, SSO, TLS)
+  - Git repository configuration
+  - ApplicationSets for templating
+  - Notifications and webhooks
+  - Backup and restore procedures
+  - Monitoring and metrics
 
 ## When to Use Docs vs Guides
 

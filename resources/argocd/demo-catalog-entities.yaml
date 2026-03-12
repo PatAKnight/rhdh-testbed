@@ -1,0 +1,101 @@
+---
+# Demo Component 1: Guestbook Application (RoadieHQ annotation style)
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-guestbook-app
+  title: Guestbook Demo Application
+  description: Demo application showcasing ArgoCD integration with RHDH using RoadieHQ plugin annotations
+  annotations:
+    # RoadieHQ ArgoCD plugin annotation
+    # See: https://roadie.io/backstage/plugins/argo-cd
+    argocd/app-name: demo-guestbook-app
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: argocd-demo
+
+    # Source code location
+    backstage.io/source-location: url:https://github.com/argoproj/argocd-example-apps/tree/master/guestbook
+  tags:
+    - demo
+    - argocd
+    - gitops
+    - guestbook
+  links:
+    - url: https://argo-cd.readthedocs.io/
+      title: ArgoCD Documentation
+      icon: docs
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/guardians-of-the-galaxy
+  dependencyOf:
+    - resource:default/argocd-instance
+---
+# Demo Component 2: Helm Guestbook (Backstage Community annotation style)
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-helm-app
+  title: Helm Guestbook Demo Application
+  description: Demo Helm application showcasing ArgoCD integration with RHDH using Backstage Community plugin annotations
+  annotations:
+    # Backstage Community ArgoCD plugin annotation
+    # See: https://docs.redhat.com/en/documentation/red_hat_plug-ins_for_backstage/2.0/html/argocd_plugin_for_backstage/argocd-plugin-for-backstage
+    argocd/app-selector: rht-gitops.com/demo-argocd=helm-app
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: argocd-demo
+
+    # Source code location
+    backstage.io/source-location: url:https://github.com/argoproj/argocd-example-apps/tree/master/helm-guestbook
+  tags:
+    - demo
+    - argocd
+    - gitops
+    - helm
+  links:
+    - url: https://argo-cd.readthedocs.io/
+      title: ArgoCD Documentation
+      icon: docs
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/x-men
+  dependencyOf:
+    - resource:default/argocd-instance
+---
+# Demo Component 3: Kustomize Application (Mixed annotations for comparison)
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-kustomize-app
+  title: Kustomize Demo Application
+  description: Demo Kustomize application showcasing ArgoCD integration with both plugin styles
+  annotations:
+    # Both annotation styles for demonstration purposes
+    # RoadieHQ style
+    argocd/app-name: demo-kustomize-app
+    # Backstage Community style
+    argocd/app-selector: rht-gitops.com/demo-argocd=kustomize-app
+
+    # Backstage Kubernetes integration
+    backstage.io/kubernetes-id: argocd-demo
+
+    # Source code location
+    backstage.io/source-location: url:https://github.com/argoproj/argocd-example-apps/tree/master/kustomize-guestbook
+  tags:
+    - demo
+    - argocd
+    - gitops
+    - kustomize
+  links:
+    - url: https://argo-cd.readthedocs.io/
+      title: ArgoCD Documentation
+      icon: docs
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/avengers
+  dependencyOf:
+    - resource:default/argocd-instance

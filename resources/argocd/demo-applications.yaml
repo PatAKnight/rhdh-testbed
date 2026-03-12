@@ -1,0 +1,71 @@
+---
+# Demo ArgoCD Application 1: Guestbook (Classic Demo)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-guestbook-app
+  namespace: rhdh
+  labels:
+    rht-gitops.com/demo-argocd: guestbook-app
+    backstage.io/kubernetes-id: argocd-demo
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhdh
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# Demo ArgoCD Application 2: Helm Chart Example
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-helm-app
+  namespace: rhdh
+  labels:
+    rht-gitops.com/demo-argocd: helm-app
+    backstage.io/kubernetes-id: argocd-demo
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: helm-guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhdh
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+---
+# Demo ArgoCD Application 3: Kustomize Example
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-kustomize-app
+  namespace: rhdh
+  labels:
+    rht-gitops.com/demo-argocd: kustomize-app
+    backstage.io/kubernetes-id: argocd-demo
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: kustomize-guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rhdh
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false

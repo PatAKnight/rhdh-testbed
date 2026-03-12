@@ -146,3 +146,41 @@ data:
       dependencyOf: component:default/janus-idp-nexus-repository-manager
       dependsOn: 
         - resource:default/nxrm-operator
+    ---
+    # ArgoCD Operator
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: argocd-operator
+      title: ArgoCD Operator
+      description: Operator that is used to deploy and manage ArgoCD instances for GitOps continuous delivery
+      annotations:
+        backstage.io/kubernetes-id: argocd-operator
+        backstage.io/kubernetes-namespace: rhdh
+    spec:
+      type: operator
+      owner: cluster-admins
+      dependencyOf: component:default/roadiehq-argocd
+      dependsOn: 
+        - resource:default/test-cluster
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Resource
+    metadata:
+      name: argocd-instance
+      title: ArgoCD
+      description: ArgoCD instance for GitOps continuous delivery workflows
+      annotations:
+        backstage.io/kubernetes-id: argocd-instance
+        backstage.io/kubernetes-namespace: rhdh
+      links:
+        - url: https://argo-cd.readthedocs.io/
+          title: Documentation
+          icon: web
+    spec:
+      type: gitops-platform
+      lifecycle: production
+      owner: cluster-admins
+      dependencyOf: component:default/roadiehq-argocd
+      dependsOn: 
+        - resource:default/argocd-operator
