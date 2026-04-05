@@ -1,6 +1,7 @@
 # Contributing to RHDH Testbed
 
-Thank you for your interest in contributing to the RHDH Testbed project! This guide will help you get started.
+Thank you for your interest in contributing to the RHDH Testbed project! This guide will help you
+get started.
 
 ## Table of Contents
 
@@ -18,7 +19,8 @@ Thank you for your interest in contributing to the RHDH Testbed project! This gu
 Before contributing, please:
 
 1. Familiarize yourself with the [README](README.md) to understand the project's purpose
-2. Review existing [issues](https://github.com/PatAKnight/rhdh-testbed/issues) to avoid duplicating work
+2. Review existing [issues](https://github.com/PatAKnight/rhdh-testbed/issues) to avoid duplicating
+   work
 3. Check the `docs/` folder for plugin-specific documentation
 
 ## Development Setup
@@ -61,11 +63,13 @@ Before contributing, please:
 
 ## Adding New Plugins
 
-When adding support for a new RHDH plugin, you'll need to create several components. You can use the Cursor IDE with our scaffolding rule for guided assistance, or follow the manual checklist below.
+When adding support for a new RHDH plugin, you'll need to create several components. You can use the
+Cursor IDE with our scaffolding rule for guided assistance, or follow the manual checklist below.
 
 ### Using Cursor IDE (Recommended)
 
-If you're using [Cursor IDE](https://cursor.sh/), this repository includes a scaffolding rule that provides guided assistance when adding new plugins.
+If you're using [Cursor IDE](https://cursor.sh/), this repository includes a scaffolding rule that
+provides guided assistance when adding new plugins.
 
 #### How It Works
 
@@ -82,7 +86,7 @@ The rule at `.cursor/rules/plugin-scaffolding.mdc` automatically activates when 
 
 2. Start a new chat and ask Cursor to help add a plugin:
 
-   ```
+   ```text
    I want to add support for the <plugin-name> plugin. Can you help me scaffold the necessary files?
    ```
 
@@ -209,7 +213,7 @@ fi
 1. Create a feature branch from `main`:
 
    ```bash
-   git checkout -b feature/add-<plugin>-support
+   git checkout -b feature/add- < plugin > -support
    ```
 
 2. Make your changes following the conventions above
